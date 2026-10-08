@@ -13,7 +13,7 @@
 
 ## Commands
 - Run: `./mvnw spring-boot:run` (then open http://localhost:8080)
-- Run with sample data: `./mvnw spring-boot:run -Dspring-boot.run.profiles=demo` (sign in as demo / demo1234; uses `./data/demo`)
+- Run with sample data: `./mvnw spring-boot:run -Pdemo` (sign in as demo / demo1234; uses `./data/demo`). Don't suggest `-Dspring-boot.run.profiles=...` to the user: PowerShell splits it at the dot.
 - Test: `./mvnw test`
 
 ## Notes

@@ -68,4 +68,15 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- ./mvnw spring-boot:run -Pdemo runs with sample data. Works in every shell, unlike
+             -Dspring-boot.run.profiles=demo, which PowerShell splits at the first dot. -->
+        <profile>
+            <id>demo</id>
+            <properties>
+                <spring-boot.run.profiles>demo</spring-boot.run.profiles>
+            </properties>
+        </profile>
+    </profiles>
 </project>

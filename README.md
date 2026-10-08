@@ -146,7 +146,7 @@ Everything except `/login` and `/register` requires signing in.
 
 ## Run It
 
-Requirements: JDK 17+ (Maven is not needed, the wrapper is included). Commands work in Git Bash, macOS and Linux; in Windows PowerShell write `.\mvnw` instead of `./mvnw`.
+Requirements: JDK 17+ (Maven is not needed, the wrapper is included). The commands work as written in PowerShell, Git Bash, macOS and Linux (in the old cmd.exe, type `mvnw` instead of `./mvnw`).
 
 ```bash
 ./mvnw spring-boot:run
@@ -159,10 +159,10 @@ Open http://localhost:8080 and create an account. Data is stored in `./data/expe
 The `demo` profile creates a `demo` account (password `demo1234`) with about 26 sample expenses and 3 budgets. It uses its own file, `./data/demo.mv.db`, so it never touches your real data.
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
+./mvnw spring-boot:run -Pdemo
 ```
 
-In Windows PowerShell, quote the property: `.\mvnw spring-boot:run '-Dspring-boot.run.profiles=demo'`.
+`-Pdemo` turns on a Maven profile that sets the Spring profile, and it works the same in PowerShell, cmd and bash. (The long form `-Dspring-boot.run.profiles=demo` breaks in PowerShell, which splits it at the first dot.)
 
 ### Low-memory run
 
