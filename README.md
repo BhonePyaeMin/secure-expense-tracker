@@ -19,6 +19,9 @@ A lightweight personal expense tracker built with **Java 17 and Spring Boot**. L
 - Monthly summary: per-category totals with bars, a **spending-by-day chart** (Chart.js from a CDN), and totals **per payment method** (Cash, Bank transfer, PromptPay, E-wallet, Card)
 - Monthly budget per category, with over-budget rows highlighted
 - **Daily allowance**: what's left of your budgets divided by the days left in the month, red when you're over
+- **Daily average** and an **end-of-month projection** that doesn't count rent and other recurring bills as daily spending
+- **Insights** page: each category **compared with last month** (over the same days while a month is running), the **top 5 expenses**, and **spending by weekday**
+- **Savings goals** with a progress bar and how much to save each month to reach the target date
 
 **Security**
 - Sign up and sign in (Spring Security, BCrypt); every query is scoped to the signed-in user
@@ -40,7 +43,7 @@ A lightweight personal expense tracker built with **Java 17 and Spring Boot**. L
 | Database | H2 in file mode | No server to run, tiny footprint |
 | Charts | Chart.js 4 from cdnjs, pinned with an SRI hash | No server memory, no build step |
 | Build | Maven (wrapper included) | No global install needed |
-| Tests | JUnit 5, MockMvc, DataJpaTest, Spring Security Test | 154 tests |
+| Tests | JUnit 5, MockMvc, DataJpaTest, Spring Security Test | 182 tests |
 | CI | GitHub Actions | Runs `./mvnw test` on every push |
 
 Deliberately left out to keep memory low: Actuator, Docker, a front-end framework, and any CSV, chart, or AI library on the server. The only dependencies beyond the Spring Boot starters are H2 and `spring-security-test`.
@@ -62,46 +65,48 @@ expense-tracker/
     │   │   │   ├── DemoDataSeeder.java             sample data for the "demo" profile
     │   │   │   └── WebConfig.java
     │   │   ├── model/
-    │   │   │   ├── Expense.java, Budget.java, RecurringExpense.java, Income.java
+    │   │   │   ├── Expense.java, Budget.java, RecurringExpense.java, Income.java, SavingsGoal.java
     │   │   │   ├── User.java, AuditEntry.java
     │   │   │   ├── Category.java, PaymentMethod.java, AuditAction.java  (enums)
-    │   │   │   └── EnumNameConverter.java (+ CategoryConverter, AuditActionConverter)
+    │   │   │   └── EnumNameConverter.java (+ Category, PaymentMethod and AuditAction converters)
     │   │   ├── repository/
     │   │   │   ├── ExpenseRepository.java          grouped JPQL for totals
     │   │   │   ├── ExpenseSpecifications.java      optional filters, always scoped to the owner
-    │   │   │   └── BudgetRepository, RecurringExpenseRepository, UserRepository, AuditEntryRepository
+    │   │   │   └── Income, Budget, RecurringExpense, SavingsGoal, User and AuditEntry repositories
     │   │   ├── security/
     │   │   │   ├── SecurityConfig.java
     │   │   │   ├── AppUserDetails.java, AppUserDetailsService.java
     │   │   │   └── LoginAttemptListener.java, LoginAttemptService.java   (lockout)
     │   │   ├── service/
-    │   │   │   ├── ExpenseService, IncomeService, BudgetService, SummaryService, UserService, AuditService
+    │   │   │   ├── ExpenseService, IncomeService, BudgetService, SummaryService, InsightsService,
+    │   │   │   │   SavingsGoalService, UserService, AuditService
     │   │   │   ├── BackupService.java              per-user ZIP of CSV files
     │   │   │   ├── RecurringExpenseService.java, RecurringExpenseScheduler.java
     │   │   │   ├── CsvExportService.java, CsvImportService.java, Csv.java
     │   │   │   ├── CategorySuggester.java, QuickEntryParser.java
-    │   │   │   └── ExpenseNotFoundException, RecurringExpenseNotFoundException, UsernameTakenException
+    │   │   │   └── NotFoundException (+ Expense and RecurringExpense variants), UsernameTakenException
     │   │   ├── web/
     │   │   │   ├── ExpenseController, TrashController, IncomeController, SummaryController
-    │   │   │   ├── RecurringController, ImportController, BackupController
+    │   │   │   ├── RecurringController, ImportController, BackupController, InsightsController, GoalsController
     │   │   │   ├── AuthController, ActivityController
     │   │   │   ├── GlobalExceptionHandler.java
     │   │   │   └── MoneyFormatter.java ("@money" in templates), CurrentUserInterceptor.java
     │   │   └── dto/
     │   │       ├── ExpenseForm, IncomeForm, BudgetForm, RecurringForm, RegistrationForm
     │   │       ├── ExpenseFilter, CategoryTotal, CategorySummary, MonthlySummary, MonthlyBalance
-    │   │       └── DailyTotal, DailySpending, DailyAllowance, PaymentMethodTotal
+    │   │       └── DailyTotal, DailySpending, DailyAllowance, PaymentMethodTotal, SpendingPace,
+    │   │           Change, CategoryComparison, MonthComparison, WeekdaySpending, GoalForm, GoalMoneyForm
     │   └── resources/
     │       ├── application.properties, application-demo.properties, messages.properties
     │       ├── static/css/style.css
     │       ├── static/js/app.js, static/js/summary-chart.js
     │       └── templates/
-    │           ├── layout.html, error.html, summary.html, income.html, recurring.html
-    │           ├── trash.html, activity.html
+    │           ├── layout.html, error.html, summary.html, insights.html, income.html, recurring.html
+    │           ├── trash.html, goals.html, activity.html, fragments/change.html
     │           ├── auth/login.html, auth/register.html
     │           └── expenses/list.html, form.html, import.html, not-found.html
     └── test/
-        ├── java/com/example/expenses/   (16 test classes, see Testing)
+        ├── java/com/example/expenses/   (19 test classes, see Testing)
         └── resources/config/            in-memory database for tests
 ```
 
@@ -125,6 +130,8 @@ expense-tracker/
 **Budget**: `owner`, `category` (unique per user), `monthlyLimit` (BigDecimal)
 
 **Income**: `owner`, `amount`, `source`, `date`
+
+**SavingsGoal**: `owner`, `name`, `targetAmount`, `savedAmount`, `targetDate` (optional)
 
 **RecurringExpense**: `owner`, `title`, `amount`, `category`, `note`, `paymentMethod`, `dayOfMonth`, `nextDueDate`, `active`
 
@@ -159,6 +166,9 @@ Everything except `/login` and `/register` requires signing in.
 | POST | `/budgets`, `/budgets/{category}/delete` | Set or remove a budget |
 | GET, POST | `/recurring` | List and add recurring expenses |
 | POST | `/recurring/{id}/pause`, `/resume`, `/delete` | Manage a recurring expense |
+| GET | `/insights?month=2026-10` | Month-over-month comparison, daily average and projection, top 5, weekdays |
+| GET, POST | `/goals` | Savings goals: list and add |
+| POST | `/goals/{id}/deposit`, `/withdraw`, `/delete` | Add money, take money out, delete a goal |
 | GET | `/activity` | Your activity log |
 | GET | `/backup` | Download your data as a ZIP of CSV files |
 | GET, POST | `/login`, `/register` | Sign in, create an account |
@@ -176,7 +186,7 @@ Open http://localhost:8080 and create an account. Data is stored in `./data/expe
 
 ### Backups
 
-- **Your own data**: the **Backup** link next to Sign out downloads a ZIP with `expenses.csv` (trash included, marked in the `deleted_at` column), `income.csv`, `budgets.csv` and `recurring.csv`. `expenses.csv` can be imported again on the Import page.
+- **Your own data**: the **Backup** link next to Sign out downloads a ZIP with `expenses.csv` (trash included, marked in the `deleted_at` column), `income.csv`, `budgets.csv`, `recurring.csv` and `goals.csv`. `expenses.csv` can be imported again on the Import page.
 - **The whole database** (every account), for whoever runs the app: stop the app and copy `data/expenses.mv.db`. Or write it out as a SQL script with H2's own tool (Maven has already downloaded it):
 
 ```bash
@@ -244,6 +254,8 @@ Tests use a fresh in-memory database per test context, so they never touch `./da
 | `ExpenseControllerTest` | Validation errors keep input, not-found page, bad parameters, pagination links, CSV download, quick add, suggestions |
 | `SummaryServiceTest` | Summary math (no expenses, exactly at the limit, over the limit), balance, payment-method shares, and the daily allowance (mid-month, last day, overspend, rounding, future and past months) |
 | `SummaryControllerTest` | Summary page, over-budget highlight, chart data and table view, budget form |
+| `InsightsServiceTest` | Month-over-month math (full months, same days while a month runs, shorter previous month, new and dropped categories, rounding), projection math (mid-month, first and last day, recurring left out of the pace, upcoming recurring added, finished months), weekday counts and averages |
+| `SavingsGoalTest`, `GoalsTest` | Progress and monthly-amount math, deposits, no over-withdrawal, validation, other users can't see or change your goals |
 | `TrashTest` | Delete moves to trash and hides it everywhere; restore and Undo bring it back; delete forever; other users can't touch your trash |
 | `BackupTest` | The ZIP has your four CSV files, includes the trash, and has no other user's data or password hashes |
 | `SecurityIntegrationTest` | User A cannot list, open, edit, delete or export user B's expenses; CSRF; login; lockout; registration; audit log; import; recurring |
@@ -292,12 +304,12 @@ Known gaps, as next steps:
 | 5 | Login with Spring Security, per-user expenses | Done |
 | Extras | Currency formatting, search, recurring expenses, auto-categorize, Chart.js chart, account lockout, audit log, CSV import, quick add, dark mode, CI | Done |
 | Usability | Income and balance, daily allowance, category from history, Repeat, duplicate-safe recurring, trash, payment methods, backup | Done |
+| Insights | Month-over-month comparison, daily average and projection, top 5 expenses, spending by weekday, savings goals | Done |
 
 ## Roadmap Ideas
 
 - Tags, receipt photos (stored on disk), splitting expenses with friends
-- Insights: month-over-month comparison, end-of-month projection, top 5 expenses, spending by weekday, anomaly alerts
-- Savings goals
+- Anomaly alerts (an expense far above your normal for that category)
 - Encrypted backup export, two-factor authentication (TOTP)
 - An LLM-written monthly summary that sends only totals, never notes
 - REST API with OpenAPI docs
