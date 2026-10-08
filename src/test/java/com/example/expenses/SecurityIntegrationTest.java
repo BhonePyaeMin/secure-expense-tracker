@@ -212,6 +212,36 @@ class SecurityIntegrationTest {
                 .andExpect(content().string(containsString("Passwords don&#39;t match")));
     }
 
+    // --- Recurring expenses page (full stack) ---
+
+    @Test
+    void recurringExpenseCanBeCreatedFromThePage() throws Exception {
+        mockMvc.perform(post("/recurring").with(user(signedInAlice())).with(csrf())
+                        .param("title", "Phone plan")
+                        .param("amount", "399.00")
+                        .param("category", "OTHER")
+                        .param("firstDate", LocalDate.now().toString()))
+                .andExpect(redirectedUrl("/recurring"));
+
+        mockMvc.perform(get("/recurring").with(user(signedInAlice())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Phone plan")))
+                .andExpect(content().string(containsString("฿399.00")));
+        mockMvc.perform(get("/expenses").with(user(signedInAlice())))
+                .andExpect(content().string(containsString("Phone plan")));
+    }
+
+    @Test
+    void recurringFirstDateMoreThanAYearAgoIsRejected() throws Exception {
+        mockMvc.perform(post("/recurring").with(user(signedInAlice())).with(csrf())
+                        .param("title", "Old thing")
+                        .param("amount", "10.00")
+                        .param("category", "OTHER")
+                        .param("firstDate", LocalDate.now().minusYears(2).toString()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("at most one year ago")));
+    }
+
     // --- Audit log ---
 
     @Test

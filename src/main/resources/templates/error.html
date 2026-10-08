@@ -8,7 +8,7 @@
 <main class="container narrow">
     <div class="notice">
         <p class="muted" th:text="${status}">500</p>
-        <h1 th:text="${status == 404} ? 'Page not found' : (${error} ?: 'Something went wrong')">Something went wrong</h1>
+        <h1 th:text="${status == 404 and error == 'Not Found'} ? 'Page not found' : (${error} ?: 'Something went wrong')">Something went wrong</h1>
         <p th:if="${message != null and message != '' and message != 'No message available'}" th:text="${message}">Details</p>
         <p th:unless="${message != null and message != '' and message != 'No message available'}">
             Please go back and try again.

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Recurring · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Recurring expenses</h1>
+    </div>
+    <p class="muted">
+        Rent, phone plans and subscriptions are added to your expenses automatically on their day each month.
+        If the app wasn't running on the day, they're added the next time it starts.
+    </p>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Recurring expense saved.</p>
+
+    <p class="empty" th:if="${recurring.isEmpty()}">No recurring expenses yet. Add one below.</p>
+
+    <div class="table-wrap" th:unless="${recurring.isEmpty()}">
+        <table class="cards-on-mobile">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th class="num">Amount</th>
+                <th>Repeats</th>
+                <th>Next</th>
+                <th><span class="sr-only">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${recurring}" th:classappend="${!r.active} ? 'paused'">
+                <td class="title-cell" data-label="Title" th:text="${r.title}">Monthly rent</td>
+                <td data-label="Category"><span class="tag" th:text="${r.category.label}">Rent</span></td>
+                <td class="num" data-label="Amount" th:text="${@money.format(r.amount)}">฿4,500.00</td>
+                <td data-label="Repeats"
+                    th:text="${r.dayOfMonth > 28} ? |Monthly on day ${r.dayOfMonth} (or the last day)| : |Monthly on day ${r.dayOfMonth}|">
+                    Monthly on day 1
+                </td>
+                <td class="nowrap" data-label="Next">
+                    <span th:if="${r.active}" th:text="${#temporals.format(r.nextDueDate, 'dd MMM yyyy')}">01 Nov 2026</span>
+                    <span th:unless="${r.active}" class="muted">Paused</span>
+                </td>
+                <td class="actions">
+                    <form th:if="${r.active}" method="post" th:action="@{/recurring/{id}/pause(id=${r.id})}">
+                        <button type="submit" class="link">Pause</button>
+                    </form>
+                    <form th:unless="${r.active}" method="post" th:action="@{/recurring/{id}/resume(id=${r.id})}">
+                        <button type="submit" class="link">Resume</button>
+                    </form>
+                    <form method="post" th:action="@{/recurring/{id}/delete(id=${r.id})}"
+                          th:data-confirm="|Stop '${r.title}'? Expenses it already added are kept.|">
+                        <button type="submit" class="link danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <section class="budgets">
+        <h2>Add a recurring expense</h2>
+        <form class="form" method="post" th:action="@{/recurring}" th:object="${recurringForm}">
+            <div class="field">
+                <label for="title">Title</label>
+                <input type="text" th:field="*{title}" th:errorclass="field-error" maxlength="100" required
+                       placeholder="e.g. Monthly rent">
+                <p class="error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Error</p>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="amount" th:text="|Amount (${@money.symbol})|">Amount</label>
+                    <input type="number" th:field="*{amount}" th:errorclass="field-error" step="0.01" min="0.01"
+                           inputmode="decimal" required>
+                    <p class="error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="firstDate">First payment</label>
+                    <input type="date" th:field="*{firstDate}" th:errorclass="field-error" required>
+                    <p class="error" th:if="${#fields.hasErrors('firstDate')}" th:errors="*{firstDate}">Error</p>
+                </div>
+            </div>
+            <div class="field">
+                <label for="category">Category</label>
+                <select th:field="*{category}" th:errorclass="field-error" required>
+                    <option value="">Choose a category</option>
+                    <option th:each="c : ${categories}" th:value="${c}" th:text="${c.label}">Rent</option>
+                </select>
+                <p class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Error</p>
+            </div>
+            <div class="field">
+                <label for="note">Note <span class="muted">(optional)</span></label>
+                <input type="text" th:field="*{note}" th:errorclass="field-error" maxlength="200">
+                <p class="error" th:if="${#fields.hasErrors('note')}" th:errors="*{note}">Error</p>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button">Save recurring expense</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

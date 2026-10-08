@@ -9,7 +9,12 @@ public enum AuditAction {
     EXPENSE_UPDATED("Expense edited"),
     EXPENSE_DELETED("Expense deleted"),
     BUDGET_SET("Budget set"),
-    BUDGET_REMOVED("Budget removed");
+    BUDGET_REMOVED("Budget removed"),
+    RECURRING_CREATED("Recurring expense set up"),
+    RECURRING_PAUSED("Recurring expense paused"),
+    RECURRING_RESUMED("Recurring expense resumed"),
+    RECURRING_DELETED("Recurring expense deleted"),
+    RECURRING_ADDED("Recurring expense added");
 
     private final String label;
 
