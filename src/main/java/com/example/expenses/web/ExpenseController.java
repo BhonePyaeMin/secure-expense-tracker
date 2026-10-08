@@ -3,6 +3,7 @@ package com.example.expenses.web;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -52,19 +54,21 @@ public class ExpenseController {
     }
 
     @GetMapping("/expenses")
-    public String list(@RequestParam(required = false) YearMonth month,
+    public String list(@AuthenticationPrincipal AppUserDetails user,
+                       @RequestParam(required = false) YearMonth month,
                        @RequestParam(required = false) Category category,
                        @RequestParam(defaultValue = "0") int page,
                        Model model) {
         ExpenseFilter filter = new ExpenseFilter(month, category);
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), PAGE_SIZE, NEWEST_FIRST);
         model.addAttribute("filter", filter);
-        model.addAttribute("expenses", expenseService.search(filter, pageRequest));
+        model.addAttribute("expenses", expenseService.search(user.getId(), filter, pageRequest));
         return "expenses/list";
     }
 
     @GetMapping("/expenses/export")
-    public void export(@RequestParam(required = false) YearMonth month,
+    public void export(@AuthenticationPrincipal AppUserDetails user,
+                       @RequestParam(required = false) YearMonth month,
                        @RequestParam(required = false) Category category,
                        HttpServletResponse response) throws IOException {
         ExpenseFilter filter = new ExpenseFilter(month, category);
@@ -73,7 +77,7 @@ public class ExpenseController {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 ContentDisposition.attachment().filename(filename).build().toString());
-        csvExportService.write(expenseService.findAll(filter), response.getWriter());
+        csvExportService.write(expenseService.findAll(user.getId(), filter), response.getWriter());
     }
 
     @GetMapping("/expenses/new")
@@ -85,38 +89,41 @@ public class ExpenseController {
     }
 
     @PostMapping("/expenses")
-    public String create(@Valid @ModelAttribute("expenseForm") ExpenseForm form, BindingResult result,
+    public String create(@AuthenticationPrincipal AppUserDetails user,
+                         @Valid @ModelAttribute("expenseForm") ExpenseForm form, BindingResult result,
                          RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             return FORM_VIEW;
         }
-        expenseService.create(form);
+        expenseService.create(user.getId(), form);
         redirectAttributes.addFlashAttribute("message", "Expense added.");
         return "redirect:/expenses";
     }
 
     @GetMapping("/expenses/{id}/edit")
-    public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("expenseForm", expenseService.formFor(id));
+    public String editForm(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id, Model model) {
+        model.addAttribute("expenseForm", expenseService.formFor(user.getId(), id));
         model.addAttribute("expenseId", id);
         return FORM_VIEW;
     }
 
     @PostMapping("/expenses/{id}")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("expenseForm") ExpenseForm form,
+    public String update(@AuthenticationPrincipal AppUserDetails user,
+                         @PathVariable Long id, @Valid @ModelAttribute("expenseForm") ExpenseForm form,
                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("expenseId", id);
             return FORM_VIEW;
         }
-        expenseService.update(id, form);
+        expenseService.update(user.getId(), id, form);
         redirectAttributes.addFlashAttribute("message", "Expense updated.");
         return "redirect:/expenses";
     }
 
     @PostMapping("/expenses/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        expenseService.delete(id);
+    public String delete(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id,
+                         RedirectAttributes redirectAttributes) {
+        expenseService.delete(user.getId(), id);
         redirectAttributes.addFlashAttribute("message", "Expense deleted.");
         return "redirect:/expenses";
     }

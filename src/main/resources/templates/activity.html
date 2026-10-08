@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Activity · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Activity log</h1>
+    </div>
+    <p class="muted">Sign-ins and every change to your expenses and budgets, newest first.</p>
+
+    <p class="empty" th:unless="${entries.hasContent()}">No activity yet.</p>
+
+    <th:block th:if="${entries.hasContent()}">
+        <div class="table-wrap">
+            <table class="cards-on-mobile">
+                <thead>
+                <tr>
+                    <th>When</th>
+                    <th>What</th>
+                    <th>Details</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${entries}" th:classappend="${entry.action.securityEvent} ? 'over'">
+                    <td class="nowrap" data-label="When"
+                        th:text="${#temporals.format(entry.localTime, 'dd MMM yyyy, HH:mm')}">08 Oct 2026, 20:15</td>
+                    <td class="nowrap" data-label="What" th:text="${entry.action.label}">Expense added</td>
+                    <td class="muted" data-label="Details" th:text="${entry.details}">#12 Lunch</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pagination" th:if="${entries.totalPages > 1}" aria-label="Pages">
+            <a th:if="${entries.hasPrevious()}" th:href="@{/activity(page=${entries.number - 1})}">&larr; Newer</a>
+            <span th:text="|Page ${entries.number + 1} of ${entries.totalPages}|">Page 1 of 3</span>
+            <a th:if="${entries.hasNext()}" th:href="@{/activity(page=${entries.number + 1})}">Older &rarr;</a>
+        </nav>
+    </th:block>
+</main>
+</body>
+</html>

@@ -11,11 +11,16 @@ import java.util.List;
 
 /**
  * Building blocks for the expense list query. Each filter is optional, so the
- * WHERE clause is assembled from only the filters that are set.
+ * WHERE clause is assembled from only the filters that are set. The owner
+ * condition is always added.
  */
 public final class ExpenseSpecifications {
 
     private ExpenseSpecifications() {
+    }
+
+    public static Specification<Expense> ownedBy(Long ownerId) {
+        return (root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId);
     }
 
     public static Specification<Expense> inMonth(YearMonth month) {
@@ -26,8 +31,9 @@ public final class ExpenseSpecifications {
         return (root, query, cb) -> cb.equal(root.get("category"), category);
     }
 
-    public static Specification<Expense> matching(ExpenseFilter filter) {
+    public static Specification<Expense> matching(Long ownerId, ExpenseFilter filter) {
         List<Specification<Expense>> specs = new ArrayList<>();
+        specs.add(ownedBy(ownerId));
         if (filter.month() != null) {
             specs.add(inMonth(filter.month()));
         }

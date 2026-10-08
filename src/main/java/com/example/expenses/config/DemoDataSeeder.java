@@ -3,13 +3,16 @@ package com.example.expenses.config;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.User;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,12 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fills an empty database with sample data. Only runs with the "demo" profile:
+ * Creates a "demo" account with sample data. Only runs with the "demo" profile:
  * ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
+ * Sign in as demo / demo1234.
  */
 @Component
 @Profile("demo")
 public class DemoDataSeeder implements ApplicationRunner {
+
+    static final String DEMO_USERNAME = "demo";
+    static final String DEMO_PASSWORD = "demo1234";
 
     private static final Logger log = LoggerFactory.getLogger(DemoDataSeeder.class);
 
@@ -58,32 +65,40 @@ public class DemoDataSeeder implements ApplicationRunner {
             {75, "Monthly rent", "4500.00", Category.RENT, "Dorm, room 304"},
     };
 
+    private final UserRepository userRepository;
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public DemoDataSeeder(ExpenseRepository expenseRepository, BudgetRepository budgetRepository) {
+    public DemoDataSeeder(UserRepository userRepository, ExpenseRepository expenseRepository,
+                          BudgetRepository budgetRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
         this.expenseRepository = expenseRepository;
         this.budgetRepository = budgetRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (expenseRepository.count() > 0) {
-            log.info("Demo profile: database already has data, skipping seed");
+        User demo = userRepository.findByUsername(DEMO_USERNAME)
+                .orElseGet(() -> userRepository.save(new User(DEMO_USERNAME, passwordEncoder.encode(DEMO_PASSWORD))));
+        if (expenseRepository.countByOwnerId(demo.getId()) > 0) {
+            log.info("Demo profile: demo account already has data, skipping seed");
             return;
         }
         LocalDate today = LocalDate.now();
         List<Expense> expenses = new ArrayList<>();
         for (Object[] sample : SAMPLES) {
-            expenses.add(new Expense((String) sample[1], new BigDecimal((String) sample[2]), (Category) sample[3],
-                    today.minusDays((Integer) sample[0]), (String) sample[4]));
+            expenses.add(new Expense(demo, (String) sample[1], new BigDecimal((String) sample[2]),
+                    (Category) sample[3], today.minusDays((Integer) sample[0]), (String) sample[4]));
         }
         expenseRepository.saveAll(expenses);
         budgetRepository.saveAll(List.of(
-                new Budget(Category.FOOD, new BigDecimal("3000.00")),
-                new Budget(Category.TRANSPORT, new BigDecimal("1000.00")),
-                new Budget(Category.FUN, new BigDecimal("500.00"))));
-        log.info("Demo profile: seeded {} expenses and 3 budgets", expenses.size());
+                new Budget(demo, Category.FOOD, new BigDecimal("3000.00")),
+                new Budget(demo, Category.TRANSPORT, new BigDecimal("1000.00")),
+                new Budget(demo, Category.FUN, new BigDecimal("500.00"))));
+        log.info("Demo profile: seeded {} expenses and 3 budgets. Sign in as {} / {}",
+                expenses.size(), DEMO_USERNAME, DEMO_PASSWORD);
     }
 }

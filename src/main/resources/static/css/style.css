@@ -72,10 +72,28 @@ h1 {
 .site-header nav {
     display: flex;
     gap: 1rem;
+    margin-right: auto;
+    margin-left: 1rem;
 }
 
 .site-header nav a {
     text-decoration: none;
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.user-menu form {
+    margin: 0;
+}
+
+.container.auth {
+    max-width: 420px;
+    padding-top: 2.5rem;
 }
 
 /* Page heading row */
@@ -131,6 +149,13 @@ button.link.danger {
     border-radius: var(--radius);
     background: var(--success-bg);
     color: var(--success-text);
+}
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    background: var(--danger-bg);
+    color: var(--danger);
 }
 
 .empty {
@@ -452,6 +477,7 @@ textarea.field-error {
     .site-header nav {
         flex-wrap: wrap;
         gap: 0.4rem 1rem;
+        margin: 0;
     }
 
     .page-head {

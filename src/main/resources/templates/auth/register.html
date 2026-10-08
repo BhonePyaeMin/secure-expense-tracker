@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Create account · Expense Tracker</title>
+</head>
+<body>
+<main class="container auth">
+    <h1>Create an account</h1>
+
+    <form class="form" method="post" th:action="@{/register}" th:object="${registrationForm}">
+        <div class="field">
+            <label for="username">Username</label>
+            <input type="text" th:field="*{username}" th:errorclass="field-error"
+                   autocomplete="username" minlength="3" maxlength="30" required autofocus>
+            <p class="error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Error</p>
+        </div>
+        <div class="field">
+            <label for="password">Password <span class="muted">(at least 8 characters)</span></label>
+            <input type="password" th:field="*{password}" th:errorclass="field-error"
+                   autocomplete="new-password" minlength="8" maxlength="72" required>
+            <p class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Error</p>
+        </div>
+        <div class="field">
+            <label for="confirmPassword">Repeat password</label>
+            <input type="password" th:field="*{confirmPassword}" th:errorclass="field-error"
+                   autocomplete="new-password" required>
+            <p class="error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}">Error</p>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">Create account</button>
+            <a th:href="@{/login}">I already have an account</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

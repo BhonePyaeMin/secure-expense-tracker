@@ -15,7 +15,7 @@ public class CsvExportService {
 
     /** Writes one row per expense. Starts with a UTF-8 byte order mark so Excel shows ฿ and Thai text correctly. */
     public void write(List<Expense> expenses, Writer writer) throws IOException {
-        writer.write('﻿');
+        writer.write('\uFEFF');
         writer.write(HEADER);
         writer.write(LINE_END);
         for (Expense expense : expenses) {

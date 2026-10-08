@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 class SummaryServiceTest {
 
     private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
+    private static final Long USER_ID = 1L;
 
     private final ExpenseRepository expenseRepository = mock(ExpenseRepository.class);
     private final BudgetRepository budgetRepository = mock(BudgetRepository.class);
@@ -30,14 +31,14 @@ class SummaryServiceTest {
 
     @BeforeEach
     void noBudgetsByDefault() {
-        when(budgetRepository.findAll()).thenReturn(List.of());
+        when(budgetRepository.findAllByOwnerIdOrderByCategoryAsc(USER_ID)).thenReturn(List.of());
     }
 
     @Test
     void noExpensesGivesZeroTotalAndNoRows() {
         givenTotals();
 
-        MonthlySummary summary = summaryService.summarize(OCTOBER);
+        MonthlySummary summary = summaryService.summarize(USER_ID, OCTOBER);
 
         assertThat(summary.totalSpent()).isEqualByComparingTo("0");
         assertThat(summary.categories()).isEmpty();
@@ -47,9 +48,9 @@ class SummaryServiceTest {
     @Test
     void budgetWithNoExpensesShowsFullAmountRemaining() {
         givenTotals();
-        givenBudgets(new Budget(Category.FOOD, new BigDecimal("3000.00")));
+        givenBudgets(new Budget(null, Category.FOOD, new BigDecimal("3000.00")));
 
-        CategorySummary food = onlyRow(summaryService.summarize(OCTOBER));
+        CategorySummary food = onlyRow(summaryService.summarize(USER_ID, OCTOBER));
 
         assertThat(food.spent()).isEqualByComparingTo("0");
         assertThat(food.remaining()).isEqualByComparingTo("3000.00");
@@ -60,9 +61,9 @@ class SummaryServiceTest {
     @Test
     void spendingExactlyAtTheLimitIsNotOverBudget() {
         givenTotals(new CategoryTotal(Category.FOOD, new BigDecimal("3000.00")));
-        givenBudgets(new Budget(Category.FOOD, new BigDecimal("3000.00")));
+        givenBudgets(new Budget(null, Category.FOOD, new BigDecimal("3000.00")));
 
-        CategorySummary food = onlyRow(summaryService.summarize(OCTOBER));
+        CategorySummary food = onlyRow(summaryService.summarize(USER_ID, OCTOBER));
 
         assertThat(food.remaining()).isEqualByComparingTo("0");
         assertThat(food.overBudget()).isFalse();
@@ -71,9 +72,9 @@ class SummaryServiceTest {
     @Test
     void spendingOverTheLimitIsFlaggedWithNegativeRemaining() {
         givenTotals(new CategoryTotal(Category.FOOD, new BigDecimal("3000.01")));
-        givenBudgets(new Budget(Category.FOOD, new BigDecimal("3000.00")));
+        givenBudgets(new Budget(null, Category.FOOD, new BigDecimal("3000.00")));
 
-        MonthlySummary summary = summaryService.summarize(OCTOBER);
+        MonthlySummary summary = summaryService.summarize(USER_ID, OCTOBER);
         CategorySummary food = onlyRow(summary);
 
         assertThat(food.remaining()).isEqualByComparingTo("-0.01");
@@ -85,7 +86,7 @@ class SummaryServiceTest {
     void categoriesWithoutBudgetHaveNoRemainingAndAreNeverOver() {
         givenTotals(new CategoryTotal(Category.FUN, new BigDecimal("999999.00")));
 
-        CategorySummary fun = onlyRow(summaryService.summarize(OCTOBER));
+        CategorySummary fun = onlyRow(summaryService.summarize(USER_ID, OCTOBER));
 
         assertThat(fun.hasBudget()).isFalse();
         assertThat(fun.remaining()).isNull();
@@ -99,7 +100,7 @@ class SummaryServiceTest {
                 new CategoryTotal(Category.RENT, new BigDecimal("200.00")),
                 new CategoryTotal(Category.TRANSPORT, new BigDecimal("12.34")));
 
-        MonthlySummary summary = summaryService.summarize(OCTOBER);
+        MonthlySummary summary = summaryService.summarize(USER_ID, OCTOBER);
 
         assertThat(summary.totalSpent()).isEqualByComparingTo("262.34");
         assertThat(summary.categories()).extracting(CategorySummary::category)
@@ -110,12 +111,12 @@ class SummaryServiceTest {
     }
 
     private void givenTotals(CategoryTotal... totals) {
-        when(expenseRepository.totalsByCategory(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
+        when(expenseRepository.totalsByCategory(USER_ID, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
                 .thenReturn(List.of(totals));
     }
 
     private void givenBudgets(Budget... budgets) {
-        when(budgetRepository.findAll()).thenReturn(List.of(budgets));
+        when(budgetRepository.findAllByOwnerIdOrderByCategoryAsc(USER_ID)).thenReturn(List.of(budgets));
     }
 
     private static CategorySummary onlyRow(MonthlySummary summary) {

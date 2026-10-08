@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface BudgetRepository extends JpaRepository<Budget, Long> {
 
-    Optional<Budget> findByCategory(Category category);
+    Optional<Budget> findByOwnerIdAndCategory(Long ownerId, Category category);
 
-    List<Budget> findAllByOrderByCategoryAsc();
+    List<Budget> findAllByOwnerIdOrderByCategoryAsc(Long ownerId);
 }

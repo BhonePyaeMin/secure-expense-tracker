@@ -2,9 +2,11 @@ package com.example.expenses.web;
 
 import com.example.expenses.dto.BudgetForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.BudgetService;
 import com.example.expenses.service.SummaryService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -36,37 +38,40 @@ public class SummaryController {
     }
 
     @GetMapping("/summary")
-    public String summary(@RequestParam(required = false) YearMonth month, Model model) {
-        addSummary(model, month);
+    public String summary(@AuthenticationPrincipal AppUserDetails user,
+                          @RequestParam(required = false) YearMonth month, Model model) {
+        addSummary(model, user.getId(), month);
         model.addAttribute("budgetForm", new BudgetForm());
         return VIEW;
     }
 
     @PostMapping("/budgets")
-    public String saveBudget(@Valid @ModelAttribute("budgetForm") BudgetForm form, BindingResult result,
+    public String saveBudget(@AuthenticationPrincipal AppUserDetails user,
+                             @Valid @ModelAttribute("budgetForm") BudgetForm form, BindingResult result,
                              @RequestParam(required = false) YearMonth month, Model model,
                              RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            addSummary(model, month);
+            addSummary(model, user.getId(), month);
             return VIEW;
         }
-        budgetService.setLimit(form.getCategory(), form.getMonthlyLimit());
+        budgetService.setLimit(user.getId(), form.getCategory(), form.getMonthlyLimit());
         redirectAttributes.addFlashAttribute("message", form.getCategory().getLabel() + " budget saved.");
         return redirectToSummary(month, redirectAttributes);
     }
 
     @PostMapping("/budgets/{category}/delete")
-    public String removeBudget(@PathVariable Category category, @RequestParam(required = false) YearMonth month,
+    public String removeBudget(@AuthenticationPrincipal AppUserDetails user, @PathVariable Category category,
+                               @RequestParam(required = false) YearMonth month,
                                RedirectAttributes redirectAttributes) {
-        budgetService.remove(category);
+        budgetService.remove(user.getId(), category);
         redirectAttributes.addFlashAttribute("message", category.getLabel() + " budget removed.");
         return redirectToSummary(month, redirectAttributes);
     }
 
-    private void addSummary(Model model, YearMonth month) {
+    private void addSummary(Model model, Long userId, YearMonth month) {
         YearMonth selected = month != null ? month : YearMonth.now();
-        model.addAttribute("summary", summaryService.summarize(selected));
-        model.addAttribute("budgets", budgetService.findAll());
+        model.addAttribute("summary", summaryService.summarize(userId, selected));
+        model.addAttribute("budgets", budgetService.findAll(userId));
     }
 
     private static String redirectToSummary(YearMonth month, RedirectAttributes redirectAttributes) {

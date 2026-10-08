@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Sign in · Expense Tracker</title>
+</head>
+<body>
+<main class="container auth">
+    <h1>Sign in</h1>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Account created.</p>
+    <p class="flash" th:if="${param.logout}">You've been signed out.</p>
+    <p class="alert" th:if="${param.error}">Wrong username or password.</p>
+    <p class="alert" th:if="${param.locked}"
+       th:text="|This account is locked after too many wrong passwords. Try again in ${lockoutMinutes} minutes.|">
+        This account is locked after too many wrong passwords. Try again in 15 minutes.
+    </p>
+
+    <form class="form" method="post" th:action="@{/login}">
+        <div class="field">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">Sign in</button>
+            <a th:href="@{/register}">Create an account</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

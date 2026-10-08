@@ -9,15 +9,23 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpecificationExecutor<Expense> {
+
+    /** Looks up an expense only if it belongs to this user, so other users' ids behave as "not found". */
+    Optional<Expense> findByIdAndOwnerId(Long id, Long ownerId);
+
+    long countByOwnerId(Long ownerId);
 
     /** One row per category: the database does the summing, so no expense rows are loaded. */
     @Query("""
             select new com.example.expenses.dto.CategoryTotal(e.category, sum(e.amount))
             from Expense e
-            where e.date between :from and :to
+            where e.owner.id = :ownerId and e.date between :from and :to
             group by e.category
             """)
-    List<CategoryTotal> totalsByCategory(@Param("from") LocalDate from, @Param("to") LocalDate to);
+    List<CategoryTotal> totalsByCategory(@Param("ownerId") Long ownerId,
+                                         @Param("from") LocalDate from,
+                                         @Param("to") LocalDate to);
 }

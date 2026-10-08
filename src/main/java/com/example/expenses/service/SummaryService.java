@@ -32,11 +32,11 @@ public class SummaryService {
         this.budgetRepository = budgetRepository;
     }
 
-    public MonthlySummary summarize(YearMonth month) {
-        List<CategoryTotal> totals = expenseRepository.totalsByCategory(month.atDay(1), month.atEndOfMonth());
+    public MonthlySummary summarize(Long userId, YearMonth month) {
+        List<CategoryTotal> totals = expenseRepository.totalsByCategory(userId, month.atDay(1), month.atEndOfMonth());
 
         Map<Category, BigDecimal> limits = new EnumMap<>(Category.class);
-        for (Budget budget : budgetRepository.findAll()) {
+        for (Budget budget : budgetRepository.findAllByOwnerIdOrderByCategoryAsc(userId)) {
             limits.put(budget.getCategory(), budget.getMonthlyLimit());
         }
 

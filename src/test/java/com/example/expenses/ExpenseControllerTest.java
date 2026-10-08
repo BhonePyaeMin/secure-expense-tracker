@@ -3,6 +3,8 @@ package com.example.expenses;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.security.AppUserDetails;
+import com.example.expenses.security.SecurityConfig;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseNotFoundException;
 import com.example.expenses.service.ExpenseService;
@@ -23,9 +25,12 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -36,8 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(ExpenseController.class)
-@Import(CsvExportService.class)
+@Import({SecurityConfig.class, CsvExportService.class})
 class ExpenseControllerTest {
+
+    private static final AppUserDetails ALICE = new AppUserDetails(1L, "alice", "unused", false);
 
     @Autowired
     private MockMvc mockMvc;
@@ -47,22 +54,23 @@ class ExpenseControllerTest {
 
     @Test
     void listShowsExpensesAndKeepsFilterInPaginationLinks() throws Exception {
-        Expense lunch = new Expense("Lunch", new BigDecimal("1234.5"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
-        when(expenseService.search(any(), any()))
+        Expense lunch = new Expense(null, "Lunch", new BigDecimal("1234.5"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
+        when(expenseService.search(eq(1L), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(lunch), PageRequest.of(0, 10), 25));
 
-        mockMvc.perform(get("/expenses").param("month", "2026-10").param("category", "FOOD"))
+        mockMvc.perform(get("/expenses").param("month", "2026-10").param("category", "FOOD").with(user(ALICE)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Lunch")))
                 .andExpect(content().string(containsString("1,234.50")))
                 .andExpect(content().string(containsString("25 expenses")))
                 .andExpect(content().string(containsString("Page 1 of 3")))
-                .andExpect(content().string(containsString("/expenses?month=2026-10&amp;category=FOOD&amp;page=1")));
+                .andExpect(content().string(containsString("/expenses?month=2026-10&amp;category=FOOD&amp;page=1")))
+                .andExpect(content().string(containsString("alice")));
     }
 
     @Test
     void invalidExpenseRedisplaysFormWithErrorsAndKeepsInput() throws Exception {
-        mockMvc.perform(post("/expenses")
+        mockMvc.perform(post("/expenses").with(user(ALICE)).with(csrf())
                         .param("title", "")
                         .param("amount", "12.345")
                         .param("category", "FOOD")
@@ -81,7 +89,7 @@ class ExpenseControllerTest {
 
     @Test
     void zeroAmountIsRejected() throws Exception {
-        mockMvc.perform(post("/expenses")
+        mockMvc.perform(post("/expenses").with(user(ALICE)).with(csrf())
                         .param("title", "Lunch")
                         .param("amount", "0")
                         .param("category", "FOOD")
@@ -93,8 +101,8 @@ class ExpenseControllerTest {
     }
 
     @Test
-    void validExpenseIsSavedAndRedirects() throws Exception {
-        mockMvc.perform(post("/expenses")
+    void validExpenseIsSavedForTheSignedInUserAndRedirects() throws Exception {
+        mockMvc.perform(post("/expenses").with(user(ALICE)).with(csrf())
                         .param("title", "Lunch")
                         .param("amount", "12.50")
                         .param("category", "FOOD")
@@ -102,14 +110,14 @@ class ExpenseControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/expenses"));
 
-        verify(expenseService).create(any());
+        verify(expenseService).create(eq(1L), any());
     }
 
     @Test
     void missingExpenseShowsFriendlyNotFoundPage() throws Exception {
-        when(expenseService.formFor(42L)).thenThrow(new ExpenseNotFoundException(42L));
+        when(expenseService.formFor(1L, 42L)).thenThrow(new ExpenseNotFoundException(42L));
 
-        mockMvc.perform(get("/expenses/42/edit"))
+        mockMvc.perform(get("/expenses/42/edit").with(user(ALICE)))
                 .andExpect(status().isNotFound())
                 .andExpect(view().name("expenses/not-found"))
                 .andExpect(content().string(containsString("Expense not found")));
@@ -117,22 +125,29 @@ class ExpenseControllerTest {
 
     @Test
     void invalidMonthParameterIsBadRequest() throws Exception {
-        mockMvc.perform(get("/expenses").param("month", "banana"))
+        mockMvc.perform(get("/expenses").param("month", "banana").with(user(ALICE)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("not a valid value for month")));
     }
 
     @Test
     void exportReturnsCsvDownloadForTheFilter() throws Exception {
-        Expense lunch = new Expense("Lunch, with \"Bob\"", new BigDecimal("85.00"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
-        when(expenseService.findAll(new ExpenseFilter(YearMonth.of(2026, 10), null)))
+        Expense lunch = new Expense(null, "Lunch, with \"Bob\"", new BigDecimal("85.00"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
+        when(expenseService.findAll(1L, new ExpenseFilter(YearMonth.of(2026, 10), null)))
                 .thenReturn(List.of(lunch));
 
-        mockMvc.perform(get("/expenses/export").param("month", "2026-10"))
+        mockMvc.perform(get("/expenses/export").param("month", "2026-10").with(user(ALICE)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"expenses-2026-10.csv\""))
                 .andExpect(content().string("\uFEFFid,title,amount,category,date,note\r\n"
                         + "null,\"Lunch, with \"\"Bob\"\"\",85.00,FOOD,2026-10-01,\r\n"));
+    }
+
+    @Test
+    void anonymousUserIsSentToLogin() throws Exception {
+        mockMvc.perform(get("/expenses"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/login"));
     }
 }

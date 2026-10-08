@@ -4,8 +4,10 @@ import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.User;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.ExpenseSpecifications;
+import com.example.expenses.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,14 +33,31 @@ class ExpenseRepositoryTest {
     @Autowired
     private ExpenseRepository repository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private User owner;
+
     @BeforeEach
     void setUp() {
+        owner = userRepository.save(new User("owner", "hash"));
+        User someoneElse = userRepository.save(new User("someone-else", "hash"));
+        repository.save(new Expense(someoneElse, "Not mine", new BigDecimal("999.00"), Category.FOOD,
+                LocalDate.parse("2026-10-10"), null));
         repository.saveAll(List.of(
                 expense("Last day of September", "20.00", Category.FOOD, "2026-09-30"),
                 expense("First day of October", "12.50", Category.FOOD, "2026-10-01"),
                 expense("Rent", "300.00", Category.RENT, "2026-10-15"),
                 expense("Last day of October", "2.40", Category.TRANSPORT, "2026-10-31"),
                 expense("First day of November", "3.00", Category.FOOD, "2026-11-01")));
+    }
+
+    @Test
+    void otherUsersExpensesAreNeverIncluded() {
+        Page<Expense> page = search(new ExpenseFilter(null, null));
+
+        assertThat(page.getContent()).extracting(Expense::getTitle).doesNotContain("Not mine");
+        assertThat(repository.findByIdAndOwnerId(page.getContent().get(0).getId(), owner.getId())).isPresent();
     }
 
     @Test
@@ -76,7 +95,7 @@ class ExpenseRepositoryTest {
     @Test
     void resultsArePaginated() {
         Page<Expense> page = repository.findAll(
-                ExpenseSpecifications.matching(new ExpenseFilter(null, null)), PageRequest.of(1, 2));
+                ExpenseSpecifications.matching(owner.getId(), new ExpenseFilter(null, null)), PageRequest.of(1, 2));
 
         assertThat(page.getContent()).hasSize(2);
         assertThat(page.getTotalPages()).isEqualTo(3);
@@ -86,7 +105,7 @@ class ExpenseRepositoryTest {
     void totalsByCategorySumsOnlyTheGivenMonth() {
         repository.save(expense("Second October lunch", "7.50", Category.FOOD, "2026-10-20"));
 
-        List<CategoryTotal> totals = repository.totalsByCategory(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+        List<CategoryTotal> totals = repository.totalsByCategory(owner.getId(), LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
 
         assertThat(totals).extracting(CategoryTotal::category, t -> t.total().stripTrailingZeros().toPlainString())
                 .containsExactlyInAnyOrder(
@@ -96,10 +115,10 @@ class ExpenseRepositoryTest {
     }
 
     private Page<Expense> search(ExpenseFilter filter) {
-        return repository.findAll(ExpenseSpecifications.matching(filter), FIRST_PAGE);
+        return repository.findAll(ExpenseSpecifications.matching(owner.getId(), filter), FIRST_PAGE);
     }
 
-    private static Expense expense(String title, String amount, Category category, String date) {
-        return new Expense(title, new BigDecimal(amount), category, LocalDate.parse(date), null);
+    private Expense expense(String title, String amount, Category category, String date) {
+        return new Expense(owner, title, new BigDecimal(amount), category, LocalDate.parse(date), null);
     }
 }

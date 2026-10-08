@@ -11,11 +11,18 @@
 <header class="site-header">
     <div class="container header-inner">
         <a class="brand" th:href="@{/expenses}">Expense Tracker</a>
-        <nav>
+        <nav th:if="${currentUsername != null}">
             <a th:href="@{/expenses}">Expenses</a>
             <a th:href="@{/expenses/new}">Add expense</a>
             <a th:href="@{/summary}">Summary</a>
+            <a th:href="@{/activity}">Activity</a>
         </nav>
+        <div class="user-menu" th:if="${currentUsername != null}">
+            <span class="muted" th:text="${currentUsername}">alice</span>
+            <form method="post" th:action="@{/logout}">
+                <button type="submit" class="link">Sign out</button>
+            </form>
+        </div>
     </div>
 </header>
 
