@@ -19,6 +19,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
 
     long countByOwnerId(Long ownerId);
 
+    boolean existsByRecurringExpenseIdAndDate(Long recurringExpenseId, LocalDate date);
+
     /** The most recent expense with this exact title, ignoring case (for pre-selecting its category). */
     Optional<Expense> findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(Long ownerId, String title);
 

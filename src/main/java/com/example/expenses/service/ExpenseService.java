@@ -105,6 +105,9 @@ public class ExpenseService {
         addChange(changes, "date", existing.getDate(), form.getDate());
         addChange(changes, "note", existing.getNote(), cleanNote(form));
 
+        if (!Objects.equals(existing.getDate(), form.getDate())) {
+            existing.setRecurringExpenseId(null); // moved to another day: no longer that month's occurrence
+        }
         copyFields(form, existing); // saved on commit by JPA dirty checking
         if (!changes.isEmpty()) {
             auditService.record(userId, AuditAction.EXPENSE_UPDATED,

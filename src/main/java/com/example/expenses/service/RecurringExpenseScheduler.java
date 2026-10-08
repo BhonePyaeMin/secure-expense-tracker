@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,10 +39,16 @@ public class RecurringExpenseScheduler {
         run();
     }
 
-    private void run() {
-        int added = recurringExpenseService.addDueExpenses(LocalDate.now());
-        if (added > 0) {
-            log.info("Added {} recurring expense(s)", added);
+    // synchronized: the startup catch-up and the daily job never run at the same time in this app
+    private synchronized void run() {
+        try {
+            int added = recurringExpenseService.addDueExpenses(LocalDate.now());
+            if (added > 0) {
+                log.info("Added {} recurring expense(s)", added);
+            }
+        } catch (DataIntegrityViolationException e) {
+            // Another run already added these; this run was rolled back, so nothing is duplicated
+            log.warn("Recurring expenses were already added by another run; skipped");
         }
     }
 }

@@ -92,15 +92,27 @@ public class RecurringExpenseService {
         return added;
     }
 
+    /**
+     * Creating the expense and moving the due date happen in one transaction, so a crash or restart
+     * can't leave one without the other. On top of that, each expense remembers its template and due
+     * date: an occurrence that already exists is skipped, and a unique constraint stops two overlapping
+     * runs from both inserting it.
+     */
     private int addDueExpenses(RecurringExpense recurring, LocalDate today) {
         int added = 0;
-        while (recurring.isDue(today) && added < MAX_CATCH_UP_PER_RUN) {
-            Expense expense = expenseRepository.save(new Expense(recurring.getOwner(), recurring.getTitle(),
-                    recurring.getAmount(), recurring.getCategory(), recurring.getNextDueDate(), noteFor(recurring)));
-            auditService.record(recurring.getOwner().getId(), AuditAction.RECURRING_ADDED, "#" + expense.getId() + " "
-                    + expense.getTitle() + " (" + expense.getAmount().toPlainString() + ", " + expense.getDate() + ")");
+        int steps = 0;
+        while (recurring.isDue(today) && steps++ < MAX_CATCH_UP_PER_RUN) {
+            LocalDate due = recurring.getNextDueDate();
+            if (!expenseRepository.existsByRecurringExpenseIdAndDate(recurring.getId(), due)) {
+                Expense expense = new Expense(recurring.getOwner(), recurring.getTitle(), recurring.getAmount(),
+                        recurring.getCategory(), due, noteFor(recurring));
+                expense.setRecurringExpenseId(recurring.getId());
+                expenseRepository.save(expense);
+                auditService.record(recurring.getOwner().getId(), AuditAction.RECURRING_ADDED, "#" + expense.getId()
+                        + " " + expense.getTitle() + " (" + expense.getAmount().toPlainString() + ", " + due + ")");
+                added++;
+            }
             recurring.advance();
-            added++;
         }
         return added;
     }

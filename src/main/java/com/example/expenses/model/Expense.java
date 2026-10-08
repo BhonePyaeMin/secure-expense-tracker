@@ -10,12 +10,17 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "expenses", indexes = @Index(name = "idx_expenses_owner_date", columnList = "owner_id, expense_date"))
+@Table(name = "expenses",
+        indexes = @Index(name = "idx_expenses_owner_date", columnList = "owner_id, expense_date"),
+        // A recurring expense can create at most one expense per due date, even if two runs overlap
+        uniqueConstraints = @UniqueConstraint(name = "uk_expenses_recurring_date",
+                columnNames = {"recurring_expense_id", "expense_date"}))
 public class Expense {
 
     @Id
@@ -42,6 +47,10 @@ public class Expense {
 
     @Column(length = 255)
     private String note;
+
+    // Set when created by a RecurringExpense; null for everything typed in or imported
+    @Column(name = "recurring_expense_id")
+    private Long recurringExpenseId;
 
     public Expense() {
     }
@@ -105,5 +114,13 @@ public class Expense {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public Long getRecurringExpenseId() {
+        return recurringExpenseId;
+    }
+
+    public void setRecurringExpenseId(Long recurringExpenseId) {
+        this.recurringExpenseId = recurringExpenseId;
     }
 }

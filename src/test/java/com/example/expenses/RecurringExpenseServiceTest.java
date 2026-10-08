@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -102,6 +104,45 @@ class RecurringExpenseServiceTest {
         assertThat(expense.getOwner().getId()).isEqualTo(alice.getId());
         assertThat(expense.getCategory()).isEqualTo(Category.FUN);
         assertThat(expense.getNote()).isEqualTo("Recurring");
+        assertThat(expense.getRecurringExpenseId()).isEqualTo(onlyRecurring().getId());
+    }
+
+    // --- Duplicate safety ---
+
+    @Test
+    void aRestartWithStaleScheduleStateDoesNotCreateADuplicate() {
+        service.create(alice.getId(), form("Rent", "4500.00", TODAY), TODAY);
+        RecurringExpense rent = onlyRecurring();
+
+        // Pretend the move to next month was lost (crash, restored backup): the job sees today as due again
+        ReflectionTestUtils.setField(rent, "nextDueDate", TODAY);
+        int added = service.addDueExpenses(TODAY);
+
+        assertThat(added).isZero();
+        assertThat(expenseDates()).containsExactly(TODAY);
+        assertThat(rent.getNextDueDate()).isEqualTo(LocalDate.of(2026, 11, 8));
+    }
+
+    @Test
+    void theDatabaseRefusesASecondCopyOfTheSameOccurrence() {
+        service.create(alice.getId(), form("Rent", "4500.00", TODAY), TODAY);
+        Long templateId = onlyRecurring().getId();
+
+        Expense duplicate = new Expense(alice, "Rent", new BigDecimal("4500.00"), Category.RENT, TODAY, "Recurring");
+        duplicate.setRecurringExpenseId(templateId);
+
+        assertThatThrownBy(() -> expenseRepository.saveAndFlush(duplicate))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void ordinaryExpensesOnTheSameDayAreNotAffected() {
+        service.create(alice.getId(), form("Rent", "4500.00", TODAY), TODAY);
+
+        expenseRepository.saveAndFlush(new Expense(alice, "Rent", new BigDecimal("4500.00"), Category.RENT, TODAY, null));
+        expenseRepository.saveAndFlush(new Expense(alice, "Rent", new BigDecimal("4500.00"), Category.RENT, TODAY, null));
+
+        assertThat(expenseDates()).hasSize(3);
     }
 
     @Test
