@@ -20,7 +20,14 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "expenses",
-        indexes = @Index(name = "idx_expenses_owner_date", columnList = "owner_id, expense_date"),
+        // owner_id + date serves every per-user list and total (and lookups by user alone);
+        // the others help month and category filters
+        indexes = {
+                @Index(name = "idx_expenses_owner_date", columnList = "owner_id, expense_date"),
+                @Index(name = "idx_expenses_date", columnList = "expense_date"),
+                @Index(name = "idx_expenses_category", columnList = "category"),
+                @Index(name = "idx_expenses_date_category", columnList = "expense_date, category")
+        },
         // A recurring expense can create at most one expense per due date, even if two runs overlap
         uniqueConstraints = @UniqueConstraint(name = "uk_expenses_recurring_date",
                 columnNames = {"recurring_expense_id", "expense_date"}))
