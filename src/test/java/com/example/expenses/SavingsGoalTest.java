@@ -23,11 +23,11 @@ class SavingsGoalTest {
     }
 
     @Test
-    void monthlyAmountCountsThisMonthAndTheTargetMonthAndRoundsUp() {
-        // October to March is 6 months; 23,000 / 6 = 3,833.333... -> 3,833.34 so it's never short
+    void monthlyAmountCountsThisMonthAndTheTargetMonth() {
+        // October to March is 6 months; 23,000 / 6 = 3,833.333... -> 3,833.33 (HALF_UP)
         SavingsGoal goal = goal("35000", "12000", LocalDate.of(2027, 3, 31));
 
-        assertThat(goal.monthlyNeeded(TODAY)).isEqualByComparingTo("3833.34");
+        assertThat(goal.monthlyNeeded(TODAY)).isEqualByComparingTo("3833.33");
     }
 
     @Test

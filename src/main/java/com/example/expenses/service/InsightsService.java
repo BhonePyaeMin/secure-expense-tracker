@@ -9,13 +9,13 @@ import com.example.expenses.dto.SpendingPace;
 import com.example.expenses.dto.WeekdaySpending;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.Money;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.RecurringExpenseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -70,7 +70,7 @@ public class InsightsService {
 
         Map<DayOfWeek, BigDecimal> averages = new EnumMap<>(DayOfWeek.class);
         days.forEach((day, count) -> averages.put(day,
-                totals.getOrDefault(day, BigDecimal.ZERO).divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP)));
+                Money.divide(totals.getOrDefault(day, BigDecimal.ZERO), count)));
         BigDecimal highest = averages.values().stream().max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
 
         List<WeekdaySpending> result = new ArrayList<>();
@@ -80,7 +80,7 @@ public class InsightsService {
             }
             BigDecimal average = averages.get(day);
             BigDecimal barPercent = highest.signum() == 0 ? BigDecimal.ZERO
-                    : average.multiply(BigDecimal.valueOf(100)).divide(highest, 1, RoundingMode.HALF_UP);
+                    : Money.percent(average, highest);
             result.add(new WeekdaySpending(day, money(totals.getOrDefault(day, BigDecimal.ZERO)), days.get(day),
                     average, barPercent, highest.signum() > 0 && average.compareTo(highest) == 0));
         }
@@ -148,7 +148,7 @@ public class InsightsService {
     }
 
     private static BigDecimal sum(Map<Category, BigDecimal> amounts) {
-        return money(amounts.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
+        return Money.total(amounts.values());
     }
 
     private static BigDecimal orZero(BigDecimal value) {
@@ -156,6 +156,6 @@ public class InsightsService {
     }
 
     static BigDecimal money(BigDecimal value) {
-        return value.setScale(2, RoundingMode.HALF_UP);
+        return Money.of(value);
     }
 }

@@ -232,13 +232,18 @@ class SummaryServiceTest {
     }
 
     @Test
-    void roundsDownSoPositiveNeverOverstatesAndNegativeShowsTheFullOverspend() {
+    void allowanceRoundsHalfUpToTheCentLikeAllMoney() {
         LocalDate threeDaysLeft = LocalDate.of(2026, 10, 29);
 
         assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "2900", "3000")), threeDaysLeft)
                 .orElseThrow().perDay()).isEqualByComparingTo("33.33");
         assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "3100", "3000")), threeDaysLeft)
-                .orElseThrow().perDay()).isEqualByComparingTo("-33.34");
+                .orElseThrow().perDay()).isEqualByComparingTo("-33.33");
+        // 10.00 over 3 days and 20.00 over 3 days
+        assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "2990", "3000")), threeDaysLeft)
+                .orElseThrow().perDay()).isEqualByComparingTo("3.33");
+        assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "2980", "3000")), threeDaysLeft)
+                .orElseThrow().perDay()).isEqualByComparingTo("6.67");
     }
 
     @Test

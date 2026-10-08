@@ -10,6 +10,7 @@ import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.dto.PaymentMethodTotal;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
+import com.example.expenses.model.Money;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.IncomeRepository;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
@@ -31,8 +31,6 @@ import java.util.stream.IntStream;
 @Service
 @Transactional(readOnly = true)
 public class SummaryService {
-
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
@@ -79,7 +77,7 @@ public class SummaryService {
 
     /**
      * What's left of all category budgets, divided by the days left in the month (today included).
-     * Rounded down, so a positive allowance never overstates and a negative one shows the full overspend.
+     * Rounded to the cent with the app's money rules (Money: HALF_UP).
      * Spending in categories without a budget doesn't count. Empty when no budgets are set or the month is over.
      */
     public Optional<DailyAllowance> dailyAllowance(MonthlySummary summary, LocalDate today) {
@@ -95,7 +93,7 @@ public class SummaryService {
         BigDecimal remaining = budgeted.stream()
                 .map(CategorySummary::remaining)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal perDay = remaining.divide(BigDecimal.valueOf(daysLeft), 2, RoundingMode.FLOOR);
+        BigDecimal perDay = Money.divide(remaining, daysLeft);
         return Optional.of(new DailyAllowance(remaining, daysLeft, perDay));
     }
 
@@ -140,10 +138,10 @@ public class SummaryService {
         if (whole.signum() == 0) {
             return BigDecimal.ZERO;
         }
-        return part.multiply(HUNDRED).divide(whole, 1, RoundingMode.HALF_UP);
+        return Money.percent(part, whole);
     }
 
     private static BigDecimal money(BigDecimal value) {
-        return value.setScale(2, RoundingMode.HALF_UP);
+        return Money.of(value);
     }
 }

@@ -3,6 +3,7 @@ package com.example.expenses.service;
 import com.example.expenses.dto.IncomeForm;
 import com.example.expenses.model.AuditAction;
 import com.example.expenses.model.Income;
+import com.example.expenses.model.Money;
 import com.example.expenses.repository.IncomeRepository;
 import com.example.expenses.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class IncomeService {
 
     public BigDecimal totalForMonth(Long userId, YearMonth month) {
         BigDecimal total = incomeRepository.totalBetween(userId, month.atDay(1), month.atEndOfMonth());
-        return total == null ? BigDecimal.ZERO : total;
+        return Money.of(total == null ? BigDecimal.ZERO : total);
     }
 
     public List<String> previousSources(Long userId) {

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
  *
  * @param remaining what's left of all category budgets this month (negative when over)
  * @param daysLeft  days left in the month, counting today
- * @param perDay    remaining divided by daysLeft, rounded down to the cent
+ * @param perDay    remaining divided by daysLeft, rounded to the cent (Money)
  */
 public record DailyAllowance(BigDecimal remaining, int daysLeft, BigDecimal perDay) {
 

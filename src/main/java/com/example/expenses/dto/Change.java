@@ -1,12 +1,11 @@
 package com.example.expenses.dto;
 
+import com.example.expenses.model.Money;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 /** How an amount changed from one period to the next. */
 public record Change(BigDecimal current, BigDecimal previous) {
-
-    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     public BigDecimal difference() {
         return current.subtract(previous);
@@ -17,7 +16,7 @@ public record Change(BigDecimal current, BigDecimal previous) {
         if (previous.signum() == 0) {
             return null;
         }
-        return difference().multiply(HUNDRED).divide(previous, 1, RoundingMode.HALF_UP);
+        return Money.percent(difference(), previous);
     }
 
     /** "+12.5%", "-50.0%", or "" when there's nothing to compare with. */

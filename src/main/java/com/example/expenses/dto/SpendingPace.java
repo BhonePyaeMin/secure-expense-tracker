@@ -1,7 +1,8 @@
 package com.example.expenses.dto;
 
+import com.example.expenses.model.Money;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -45,11 +46,11 @@ public record SpendingPace(BigDecimal spent,
         BigDecimal days = BigDecimal.valueOf(daysCounted);
 
         BigDecimal dayToDay = spent.subtract(fixedSpent).max(BigDecimal.ZERO);
-        BigDecimal dailyAverage = spent.divide(days, 2, RoundingMode.HALF_UP);
-        BigDecimal dayToDayAverage = dayToDay.divide(days, 2, RoundingMode.HALF_UP);
+        BigDecimal dailyAverage = Money.divide(spent, days);
+        BigDecimal dayToDayAverage = Money.divide(dayToDay, days);
         BigDecimal projection = finished
                 ? spent
-                : spent.add(dayToDay.multiply(BigDecimal.valueOf(daysLeft)).divide(days, 2, RoundingMode.HALF_UP))
+                : spent.add(Money.divide(dayToDay.multiply(BigDecimal.valueOf(daysLeft)), days))
                         .add(upcomingRecurring);
 
         return new SpendingPace(money(spent), daysCounted, daysInMonth, dailyAverage, dayToDayAverage,
@@ -57,6 +58,6 @@ public record SpendingPace(BigDecimal spent,
     }
 
     private static BigDecimal money(BigDecimal value) {
-        return value.setScale(2, RoundingMode.HALF_UP);
+        return Money.of(value);
     }
 }

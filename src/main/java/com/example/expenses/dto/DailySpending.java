@@ -1,5 +1,7 @@
 package com.example.expenses.dto;
 
+import com.example.expenses.model.Money;
+
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
@@ -25,6 +27,6 @@ public record DailySpending(YearMonth month, List<DailyTotal> days) {
     }
 
     public BigDecimal total() {
-        return days.stream().map(DailyTotal::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return Money.total(days.stream().map(DailyTotal::total).toList());
     }
 }

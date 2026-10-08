@@ -11,7 +11,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -74,7 +73,7 @@ public class SavingsGoal {
 
     /** Saved as a percentage of the target, e.g. 34.3; can go past 100. */
     public BigDecimal getPercent() {
-        return savedAmount.multiply(HUNDRED).divide(targetAmount, 1, RoundingMode.HALF_UP);
+        return Money.percent(savedAmount, targetAmount);
     }
 
     /** Like getPercent, but capped at 100 for the progress bar. */
@@ -96,7 +95,7 @@ public class SavingsGoal {
 
     /**
      * How much to save each month to reach the target by the target date, counting this month and the
-     * target date's month. Rounded up to the cent so it's never short. Null when there's no date,
+     * target date's month, rounded with the app's money rules (Money). Null when there's no date,
      * the goal is reached, or the date has passed.
      */
     public BigDecimal monthlyNeeded(LocalDate today) {
@@ -104,7 +103,7 @@ public class SavingsGoal {
             return null;
         }
         long months = ChronoUnit.MONTHS.between(YearMonth.from(today), YearMonth.from(targetDate)) + 1;
-        return getRemaining().divide(BigDecimal.valueOf(months), 2, RoundingMode.CEILING);
+        return Money.divide(getRemaining(), months);
     }
 
     public Long getId() {
