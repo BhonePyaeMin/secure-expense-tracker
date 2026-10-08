@@ -75,7 +75,7 @@
     <p class="empty" th:if="${summary.categories().isEmpty()}">No spending recorded for this month.</p>
 
     <div class="table-wrap" th:unless="${summary.categories().isEmpty()}">
-        <table class="summary-table">
+        <table class="summary-table cards-on-mobile">
             <thead>
             <tr>
                 <th>Category</th>
@@ -87,20 +87,20 @@
             </thead>
             <tbody>
             <tr th:each="row : ${summary.categories()}" th:classappend="${row.overBudget()} ? 'over'">
-                <td>
+                <td class="title-cell" data-label="Category">
                     <span th:text="${row.category().label}">Food</span>
                     <span class="badge-over" th:if="${row.overBudget()}">Over budget</span>
                 </td>
-                <td class="num" th:text="${@money.format(row.spent())}">120.00</td>
-                <td class="bar-col">
+                <td class="num" data-label="Spent" th:text="${@money.format(row.spent())}">120.00</td>
+                <td class="bar-col" data-label="Share">
                     <div class="bar-track"><div class="bar" th:style="|width: ${row.barPercent()}%|"></div></div>
                 </td>
-                <td class="num">
+                <td class="num" data-label="Budget">
                     <span th:if="${row.hasBudget()}"
                           th:text="${@money.format(row.limit())}">100.00</span>
                     <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>
                 </td>
-                <td class="num">
+                <td class="num" data-label="Remaining">
                     <span th:if="${row.hasBudget()}"
                           th:text="${@money.format(row.remaining())}">-20.00</span>
                     <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>

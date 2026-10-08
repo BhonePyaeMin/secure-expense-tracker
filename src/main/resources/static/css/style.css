@@ -338,7 +338,7 @@ h2 {
 
 .bar {
     height: 100%;
-    background: var(--accent);
+    background: var(--chart-bar);
     border-radius: 999px;
 }
 
@@ -671,7 +671,17 @@ code {
         content: attr(data-label);
         color: var(--muted);
         font-size: 0.85rem;
+        font-weight: normal;
         text-align: left;
+    }
+
+    table.cards-on-mobile td.bar-col {
+        align-items: center;
+        width: auto;
+    }
+
+    table.cards-on-mobile td.bar-col .bar-track {
+        flex: 0 1 60%;
     }
 
     table.cards-on-mobile td:empty {
@@ -691,12 +701,4 @@ code {
         content: none;
     }
 
-    .summary-table th,
-    .summary-table td {
-        padding: 0.5rem;
-    }
-
-    .bar-col {
-        min-width: 80px;
-    }
 }
