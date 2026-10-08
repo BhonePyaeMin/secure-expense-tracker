@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -25,6 +26,11 @@ public class GlobalExceptionHandler {
         model.addAttribute("error", "Recurring expense not found");
         model.addAttribute("message", "It may have been deleted, or the link is wrong.");
         return "error";
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String uploadTooLarge() {
+        return "redirect:/expenses/import?tooLarge";
     }
 
     // e.g. /expenses?month=banana

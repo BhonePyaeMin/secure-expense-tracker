@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -240,6 +242,34 @@ class SecurityIntegrationTest {
                         .param("firstDate", LocalDate.now().minusYears(2).toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("at most one year ago")));
+    }
+
+    // --- CSV import (full stack) ---
+
+    @Test
+    void importedExpensesBelongToTheSignedInUser() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "bank.csv", "text/csv",
+                "date,description,amount\n2026-10-01,Grab ride,120\n2026-10-02,Iced tea,25\n".getBytes());
+
+        mockMvc.perform(multipart("/expenses/import").file(file).with(user(signedInAlice())).with(csrf()))
+                .andExpect(redirectedUrl("/expenses"));
+
+        assertThat(expenseRepository.findAll()).filteredOn(e -> e.getOwner().getId().equals(alice.getId()))
+                .extracting(Expense::getTitle).contains("Grab ride", "Iced tea");
+        assertThat(auditActionsFor(alice)).contains(AuditAction.EXPENSES_IMPORTED);
+    }
+
+    @Test
+    void invalidImportSavesNothingAndListsTheProblems() throws Exception {
+        long before = expenseRepository.count();
+        MockMultipartFile file = new MockMultipartFile("file", "bad.csv", "text/csv",
+                "title,amount,date\nLunch,85,2026-10-01\nBroken,-1,2026-10-02\n".getBytes());
+
+        mockMvc.perform(multipart("/expenses/import").file(file).with(user(signedInAlice())).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Row 3: Amount must be greater than 0")));
+
+        assertThat(expenseRepository.count()).isEqualTo(before);
     }
 
     // --- Audit log ---

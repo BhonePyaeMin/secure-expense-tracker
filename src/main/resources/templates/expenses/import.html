@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Import CSV · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow">
+    <h1>Import expenses from CSV</h1>
+
+    <div class="alert" th:if="${param.tooLarge}">That file is too big. The limit is 1 MB.</div>
+    <div class="alert" th:if="${errors}">
+        <p class="alert-title">Nothing was imported. Fix these rows and try again:</p>
+        <ul>
+            <li th:each="error : ${errors}" th:text="${error}">Row 3: Amount must be greater than 0</li>
+        </ul>
+    </div>
+
+    <form class="form" method="post" enctype="multipart/form-data" th:action="@{/expenses/import}">
+        <div class="field">
+            <label for="file">CSV file</label>
+            <input type="file" id="file" name="file" accept=".csv,text/csv" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">Import</button>
+            <a th:href="@{/expenses}">Cancel</a>
+        </div>
+    </form>
+
+    <section class="help">
+        <h2>File format</h2>
+        <p>The first row names the columns. Column order doesn't matter, and extra columns are ignored.</p>
+        <ul>
+            <li><strong>title</strong> (or <strong>description</strong>): required</li>
+            <li><strong>amount</strong>: required, greater than 0, e.g. <code>85</code> or <code>1,250.50</code></li>
+            <li><strong>date</strong>: required, <code>2026-10-31</code> or <code>31/10/2026</code></li>
+            <li><strong>category</strong>: optional; if empty it's guessed from the title, otherwise Other</li>
+            <li><strong>note</strong>: optional</li>
+        </ul>
+        <p>A file from <a th:href="@{/expenses/export}">Export CSV</a> imports back as-is. Every row is checked first,
+            and nothing is saved unless all rows are valid. Up to 2,000 rows and 1 MB per file.</p>
+    </section>
+</main>
+</body>
+</html>

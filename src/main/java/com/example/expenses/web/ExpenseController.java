@@ -7,6 +7,7 @@ import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseService;
+import com.example.expenses.service.QuickEntryParser;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,12 +45,14 @@ public class ExpenseController {
     private final ExpenseService expenseService;
     private final CsvExportService csvExportService;
     private final CategorySuggester categorySuggester;
+    private final QuickEntryParser quickEntryParser;
 
     public ExpenseController(ExpenseService expenseService, CsvExportService csvExportService,
-                             CategorySuggester categorySuggester) {
+                             CategorySuggester categorySuggester, QuickEntryParser quickEntryParser) {
         this.expenseService = expenseService;
         this.csvExportService = csvExportService;
         this.categorySuggester = categorySuggester;
+        this.quickEntryParser = quickEntryParser;
     }
 
     @ModelAttribute("categories")
@@ -100,10 +104,18 @@ public class ExpenseController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
+    /** The add form. With ?quick=lunch+85+yesterday it comes pre-filled from that text; nothing is saved yet. */
     @GetMapping("/expenses/new")
-    public String newForm(Model model) {
-        ExpenseForm form = new ExpenseForm();
-        form.setDate(LocalDate.now());
+    public String newForm(@RequestParam(required = false) String quick, Model model) {
+        ExpenseForm form;
+        if (StringUtils.hasText(quick)) {
+            String text = quick.length() > 200 ? quick.substring(0, 200) : quick;
+            form = quickEntryParser.parse(text, LocalDate.now());
+            model.addAttribute("quickText", text);
+        } else {
+            form = new ExpenseForm();
+            form.setDate(LocalDate.now());
+        }
         model.addAttribute("expenseForm", form);
         return FORM_VIEW;
     }

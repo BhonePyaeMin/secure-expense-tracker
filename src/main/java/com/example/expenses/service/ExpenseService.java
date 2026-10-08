@@ -60,6 +60,20 @@ public class ExpenseService {
         return saved;
     }
 
+    /** Saves all imported expenses in one transaction: either every row is saved or none is. */
+    @Transactional
+    public int importAll(Long userId, List<ExpenseForm> forms, String filename) {
+        for (ExpenseForm form : forms) {
+            Expense expense = new Expense();
+            expense.setOwner(userRepository.getReferenceById(userId));
+            copyFields(form, expense);
+            expenseRepository.save(expense);
+        }
+        auditService.record(userId, AuditAction.EXPENSES_IMPORTED,
+                forms.size() + " expenses from " + (StringUtils.hasText(filename) ? filename : "a CSV file"));
+        return forms.size();
+    }
+
     @Transactional
     public Expense update(Long userId, Long id, ExpenseForm form) {
         Expense existing = findOwned(userId, id);

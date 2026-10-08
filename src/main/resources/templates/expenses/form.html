@@ -8,6 +8,17 @@
 <main class="container narrow">
     <h1 th:text="${expenseId == null} ? 'Add expense' : 'Edit expense'">Add expense</h1>
 
+    <form class="quick-add" method="get" th:action="@{/expenses/new}" th:if="${expenseId == null}">
+        <label for="quick">Quick add</label>
+        <div class="quick-row">
+            <input type="text" id="quick" name="quick" th:value="${quickText}" maxlength="200"
+                   placeholder="Try: lunch 85 baht yesterday">
+            <button type="submit" class="button secondary">Fill in</button>
+        </div>
+        <p class="hint" th:if="${quickText == null}">Type it the way you'd say it. This fills in the form below; nothing is saved until you press Save.</p>
+        <p class="flash" th:if="${quickText != null}">Filled in from your text. Check the details, then save.</p>
+    </form>
+
     <form class="form" method="post" th:object="${expenseForm}" th:data-suggest-url="@{/expenses/suggest-category}"
           th:action="${expenseId == null} ? @{/expenses} : @{/expenses/{id}(id=${expenseId})}">
 

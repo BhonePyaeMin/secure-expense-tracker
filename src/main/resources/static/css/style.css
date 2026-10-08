@@ -13,6 +13,10 @@
     --success-bg: #e8f5ec;
     --success-text: #1e6b3a;
     --radius: 8px;
+    --link: #2563eb;
+    --input-bg: #ffffff;
+    --on-danger: #ffffff;
+    color-scheme: light;
     /* Chart colors (validated with the dataviz palette checker against the surface) */
     --chart-bar: #2a78d6;
     --chart-bar-hover: #1f63b5;
@@ -33,7 +37,7 @@ body {
 }
 
 a {
-    color: var(--accent);
+    color: var(--link);
 }
 
 h1 {
@@ -136,7 +140,7 @@ button.link {
     padding: 0;
     border: 0;
     background: none;
-    color: var(--accent);
+    color: var(--link);
     font: inherit;
     text-decoration: underline;
     cursor: pointer;
@@ -356,7 +360,7 @@ tr.over .bar {
     padding: 0 0.45rem;
     border-radius: 999px;
     background: var(--danger);
-    color: #fff;
+    color: var(--on-danger);
     font-size: 0.75rem;
     font-weight: 600;
 }
@@ -411,7 +415,7 @@ tr.over .bar {
 
 .table-view summary {
     cursor: pointer;
-    color: var(--accent);
+    color: var(--link);
 }
 
 .table-view table {
@@ -454,7 +458,7 @@ textarea {
     padding: 0.5rem 0.6rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    background: #fff;
+    background: var(--input-bg);
     color: var(--text);
     font: inherit;
 }
@@ -517,6 +521,94 @@ textarea.field-error {
     display: flex;
     align-items: center;
     gap: 1rem;
+}
+
+/* Quick add and import */
+
+.quick-add {
+    margin-bottom: 1rem;
+}
+
+.quick-add label {
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.quick-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quick-row input {
+    flex: 1;
+}
+
+.quick-add .flash,
+.quick-add .hint {
+    margin: 0.4rem 0 0;
+}
+
+.button.secondary {
+    background: transparent;
+    color: var(--link);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.button.secondary:hover {
+    background: var(--surface);
+}
+
+.alert ul {
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.alert-title {
+    margin: 0;
+    font-weight: 600;
+}
+
+.help {
+    margin-top: 1.5rem;
+}
+
+.help ul {
+    padding-left: 1.25rem;
+}
+
+code {
+    padding: 0 0.25rem;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.85em;
+}
+
+/* Dark mode: follows the system setting, CSS only.
+   The chart bar color is a separate step validated against the dark surface, not an automatic flip. */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        --bg: #121417;
+        --surface: #1b1e23;
+        --text: #e6e8eb;
+        --muted: #9aa3ad;
+        --border: #2d323a;
+        --accent: #2563eb;
+        --accent-dark: #1d4ed8;
+        --link: #7fb0ff;
+        --danger: #ff7b72;
+        --danger-bg: #3a1d1d;
+        --on-danger: #1b1e23;
+        --success-bg: #12301f;
+        --success-text: #7ee2a8;
+        --input-bg: #121417;
+        --chart-bar: #3987e5;
+        --chart-bar-hover: #5a9cf0;
+        --chart-grid: #2d323a;
+    }
 }
 
 /* Small screens */

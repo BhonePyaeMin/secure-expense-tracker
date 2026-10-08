@@ -9,6 +9,7 @@ import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseNotFoundException;
 import com.example.expenses.service.ExpenseService;
+import com.example.expenses.service.QuickEntryParser;
 import com.example.expenses.web.ExpenseController;
 import com.example.expenses.web.MoneyFormatter;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(ExpenseController.class)
-@Import({SecurityConfig.class, CsvExportService.class, CategorySuggester.class, MoneyFormatter.class})
+@Import({SecurityConfig.class, CsvExportService.class, CategorySuggester.class, MoneyFormatter.class,
+        QuickEntryParser.class})
 class ExpenseControllerTest {
 
     private static final AppUserDetails ALICE = new AppUserDetails(1L, "alice", "unused", false);
@@ -170,6 +172,18 @@ class ExpenseControllerTest {
     void noSuggestionGivesNoContent() throws Exception {
         mockMvc.perform(get("/expenses/suggest-category").param("title", "something else").with(user(ALICE)))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void quickAddPrefillsTheFormWithoutSaving() throws Exception {
+        mockMvc.perform(get("/expenses/new").param("quick", "lunch 85 baht yesterday").with(user(ALICE)))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("expenseForm", org.hamcrest.Matchers.hasProperty("title",
+                        org.hamcrest.Matchers.equalTo("Lunch"))))
+                .andExpect(content().string(containsString("value=\"" + LocalDate.now().minusDays(1) + "\"")))
+                .andExpect(content().string(containsString("Check the details, then save.")));
+
+        verifyNoInteractions(expenseService);
     }
 
     @Test

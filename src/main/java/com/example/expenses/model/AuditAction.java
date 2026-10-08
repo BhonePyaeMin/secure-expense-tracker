@@ -8,6 +8,7 @@ public enum AuditAction {
     EXPENSE_CREATED("Expense added"),
     EXPENSE_UPDATED("Expense edited"),
     EXPENSE_DELETED("Expense deleted"),
+    EXPENSES_IMPORTED("Expenses imported"),
     BUDGET_SET("Budget set"),
     BUDGET_REMOVED("Budget removed"),
     RECURRING_CREATED("Recurring expense set up"),

@@ -9,6 +9,7 @@
     <div class="page-head">
         <h1>Expenses</h1>
         <div class="head-actions">
+            <a th:href="@{/expenses/import}">Import CSV</a>
             <a th:href="@{${filter.url('/expenses/export')}}">Export CSV</a>
             <a class="button" th:href="@{/expenses/new}">Add expense</a>
         </div>
