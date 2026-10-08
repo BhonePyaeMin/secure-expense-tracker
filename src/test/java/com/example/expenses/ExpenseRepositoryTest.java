@@ -125,6 +125,23 @@ class ExpenseRepositoryTest {
     }
 
     @Test
+    void topFiveAreTheBiggestOfTheMonthLeavingOutTrashAndOtherUsers() {
+        for (String amount : new String[]{"50", "60", "70", "80"}) {
+            repository.save(expense("Small " + amount, amount, Category.FOOD, "2026-10-10"));
+        }
+        Expense trashed = expense("Huge but deleted", "9999", Category.OTHER, "2026-10-11");
+        trashed.moveToTrash(java.time.Instant.now());
+        repository.save(trashed);
+
+        List<Expense> top = repository.findTop5ByOwnerIdAndDeletedAtIsNullAndDateBetweenOrderByAmountDescDateDescIdDesc(
+                owner.getId(), LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+
+        // October from setUp: Rent 300, First day 12.50, Last day 2.40; "Not mine" (999) belongs to someone else
+        assertThat(top).extracting(Expense::getTitle)
+                .containsExactly("Rent", "Small 80", "Small 70", "Small 60", "Small 50");
+    }
+
+    @Test
     void monthFilterIncludesFirstAndLastDayOnly() {
         Page<Expense> page = search(new ExpenseFilter(YearMonth.of(2026, 10), null));
 

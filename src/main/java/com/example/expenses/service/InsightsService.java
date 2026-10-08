@@ -6,6 +6,7 @@ import com.example.expenses.dto.Change;
 import com.example.expenses.dto.MonthComparison;
 import com.example.expenses.dto.SpendingPace;
 import com.example.expenses.model.Category;
+import com.example.expenses.model.Expense;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.RecurringExpenseRepository;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,12 @@ public class InsightsService {
     public InsightsService(ExpenseRepository expenseRepository, RecurringExpenseRepository recurringRepository) {
         this.expenseRepository = expenseRepository;
         this.recurringRepository = recurringRepository;
+    }
+
+    /** The five biggest expenses of the month. */
+    public List<Expense> topExpenses(Long userId, YearMonth month) {
+        return expenseRepository.findTop5ByOwnerIdAndDeletedAtIsNullAndDateBetweenOrderByAmountDescDateDescIdDesc(
+                userId, month.atDay(1), month.atEndOfMonth());
     }
 
     /** Daily average and end-of-month projection; empty for a month that hasn't started. */

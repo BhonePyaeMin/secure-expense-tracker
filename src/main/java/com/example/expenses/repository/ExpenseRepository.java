@@ -53,6 +53,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
                                          @Param("from") LocalDate from,
                                          @Param("to") LocalDate to);
 
+    /** The biggest expenses in the date range, leaving out the trash. */
+    List<Expense> findTop5ByOwnerIdAndDeletedAtIsNullAndDateBetweenOrderByAmountDescDateDescIdDesc(
+            Long ownerId, LocalDate from, LocalDate to);
+
     /** Total spent in the date range (null when nothing), leaving out the trash. */
     @Query("""
             select sum(e.amount) from Expense e

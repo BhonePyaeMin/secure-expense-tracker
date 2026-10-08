@@ -111,6 +111,36 @@
             </div>
         </th:block>
     </section>
+
+    <!-- Top 5 expenses -->
+    <section class="insight">
+        <h2>Top 5 expenses</h2>
+        <p class="empty" th:if="${topExpenses.isEmpty()}">No expenses this month.</p>
+        <div class="table-wrap" th:unless="${topExpenses.isEmpty()}">
+            <table class="cards-on-mobile">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="num">Amount</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e, iter : ${topExpenses}">
+                    <td class="muted" data-label="#" th:text="${iter.count}">1</td>
+                    <td class="nowrap" data-label="Date" th:text="${#temporals.format(e.date, 'dd MMM')}">15 Oct</td>
+                    <td class="title-cell" data-label="Title">
+                        <a th:href="@{/expenses/{id}/edit(id=${e.id})}" th:text="${e.title}">Monthly rent</a>
+                    </td>
+                    <td data-label="Category"><span class="tag" th:text="${e.category.label}">Rent</span></td>
+                    <td class="num" data-label="Amount" th:text="${@money.format(e.amount)}">฿4,500.00</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </main>
 </body>
 </html>

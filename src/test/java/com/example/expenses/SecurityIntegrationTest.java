@@ -306,6 +306,8 @@ class SecurityIntegrationTest {
                 .andExpect(content().string(containsString("Compared with")))
                 .andExpect(content().string(containsString("Food")))
                 .andExpect(content().string(containsString("+50.0%")))
+                .andExpect(content().string(containsString("Top 5 expenses")))
+                .andExpect(content().string(containsString("Alice groceries")))
                 .andExpect(content().string(not(containsString("Bob secret dinner"))));
     }
 
