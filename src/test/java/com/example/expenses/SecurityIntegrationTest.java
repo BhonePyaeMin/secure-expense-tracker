@@ -294,6 +294,21 @@ class SecurityIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // --- Insights ---
+
+    @Test
+    void insightsComparesYourOwnSpendingWithLastMonth() throws Exception {
+        expenseRepository.save(new Expense(alice, "Last month groceries", new BigDecimal("200.00"), Category.FOOD,
+                LocalDate.now().minusMonths(1).withDayOfMonth(1), null));
+
+        mockMvc.perform(get("/insights").with(user(signedInAlice())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Compared with")))
+                .andExpect(content().string(containsString("Food")))
+                .andExpect(content().string(containsString("+50.0%")))
+                .andExpect(content().string(not(containsString("Bob secret dinner"))));
+    }
+
     // --- Income ---
 
     @Test

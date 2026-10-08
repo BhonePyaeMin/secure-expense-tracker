@@ -15,12 +15,13 @@
             <a th:href="@{/expenses}">Expenses</a>
             <a th:href="@{/expenses/new}">Add expense</a>
             <a th:href="@{/summary}">Summary</a>
+            <a th:href="@{/insights}">Insights</a>
             <a th:href="@{/income}">Income</a>
             <a th:href="@{/recurring}">Recurring</a>
-            <a th:href="@{/activity}">Activity</a>
         </nav>
         <div class="user-menu" th:if="${currentUsername != null}">
             <span class="muted" th:text="${currentUsername}">alice</span>
+            <a th:href="@{/activity}">Activity</a>
             <a th:href="@{/backup}" title="Download all your data as CSV files in a ZIP">Backup</a>
             <form method="post" th:action="@{/logout}">
                 <button type="submit" class="link">Sign out</button>

@@ -8,6 +8,7 @@
 <main class="container" th:with="month=${summary.month()}">
     <div class="page-head">
         <h1 th:text="|Summary for ${#temporals.format(month.atDay(1), 'MMMM yyyy')}|">Summary for October 2026</h1>
+        <a th:href="@{/insights(month=${month})}">Insights &rarr;</a>
     </div>
 
     <p class="flash" th:if="${message}" th:text="${message}">Budget saved.</p>

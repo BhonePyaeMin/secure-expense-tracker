@@ -408,6 +408,31 @@ tr.over .bar {
     flex: 1;
 }
 
+/* Insights */
+
+.insight {
+    margin-bottom: 2rem;
+}
+
+.insight-headline span {
+    display: block;
+}
+
+.change-up {
+    color: var(--danger);
+    white-space: nowrap;
+}
+
+.change-down {
+    color: var(--success-text);
+    white-space: nowrap;
+}
+
+tr.total-row td {
+    font-weight: 600;
+    border-top: 2px solid var(--border);
+}
+
 /* Chart */
 
 .chart-card {

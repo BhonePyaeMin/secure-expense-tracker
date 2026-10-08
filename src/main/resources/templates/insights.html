@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Insights · Expense Tracker</title>
+</head>
+<body>
+<main class="container" th:with="monthName=${#temporals.format(month.atDay(1), 'MMMM yyyy')}">
+    <div class="page-head">
+        <h1 th:text="|Insights for ${monthName}|">Insights for October 2026</h1>
+        <a th:href="@{/summary(month=${month})}">Summary</a>
+    </div>
+
+    <form class="filters" method="get" th:action="@{/insights}">
+        <a th:href="@{/insights(month=${month.minusMonths(1)})}">&larr; Previous</a>
+        <div class="field">
+            <label for="month">Month</label>
+            <input type="month" id="month" name="month" th:value="${month}" required>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="button">Show</button>
+            <a th:href="@{/insights(month=${month.plusMonths(1)})}">Next &rarr;</a>
+        </div>
+    </form>
+
+    <!-- Month-over-month comparison -->
+    <section class="insight"
+             th:with="c=${comparison},
+                      prevName=${#temporals.format(comparison.previousMonth().atDay(1), 'MMMM')},
+                      thisLabel=${#temporals.format(month.atDay(1), 'MMM')},
+                      prevLabel=${#temporals.format(comparison.previousMonth().atDay(1), 'MMM')}">
+        <h2 th:text="${c.isPartial()} ? |Compared with 1–${c.throughDay()} ${prevName}| : |Compared with ${prevName}|">
+            Compared with September</h2>
+        <p class="muted" th:if="${c.isPartial()}"
+           th:text="|This month isn't over yet, so both months are compared over the same days (1 to ${c.throughDay()}).|">
+            This month isn't over yet.</p>
+
+        <p class="empty" th:if="${c.categories().isEmpty()}">No spending in either month.</p>
+
+        <th:block th:unless="${c.categories().isEmpty()}">
+            <p class="insight-headline" th:with="biggest=${c.biggestIncrease().orElse(null)}">
+                <span th:if="${c.total().isUp()}"
+                      th:text="|You spent ${@money.format(c.total().difference())} more in total (${c.total().percentText()}).|">You spent more.</span>
+                <span th:if="${c.total().isDown()}"
+                      th:text="|You spent ${@money.format(c.total().difference().negate())} less in total (${c.total().percentText()}).|">You spent less.</span>
+                <span th:if="${c.total().isNew()}">There's no spending to compare with in the earlier month.</span>
+                <span th:if="${c.total().difference().signum() == 0}">You spent the same in total.</span>
+                <span th:if="${biggest != null and !biggest.change().isNew()}"
+                      th:text="|Biggest increase: ${biggest.category().label}, +${@money.format(biggest.change().difference())} (${biggest.change().percentText()}).|">
+                    Biggest increase: Food.</span>
+                <span th:if="${biggest != null and biggest.change().isNew()}"
+                      th:text="|Biggest increase: ${biggest.category().label}, new this month (${@money.format(biggest.change().current())}).|">
+                    Biggest increase: Fun, new this month.</span>
+            </p>
+
+            <div class="table-wrap">
+                <table class="cards-on-mobile">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="num" th:text="${thisLabel}">Oct</th>
+                        <th class="num" th:text="${prevLabel}">Sep</th>
+                        <th class="num">Change</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${c.categories()}">
+                        <td class="title-cell" data-label="Category" th:text="${row.category().label}">Food</td>
+                        <td class="num" th:data-label="${thisLabel}" th:text="${@money.format(row.change().current())}">฿1,100.00</td>
+                        <td class="num" th:data-label="${prevLabel}" th:text="${@money.format(row.change().previous())}">฿1,000.00</td>
+                        <td class="num" data-label="Change"
+                            th:insert="~{fragments/change :: change-cell(${row.change()})}">+10.0%</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td class="title-cell" data-label="Category">Total</td>
+                        <td class="num" th:data-label="${thisLabel}" th:text="${@money.format(c.total().current())}">฿1,600.00</td>
+                        <td class="num" th:data-label="${prevLabel}" th:text="${@money.format(c.total().previous())}">฿1,550.00</td>
+                        <td class="num" data-label="Change"
+                            th:insert="~{fragments/change :: change-cell(${c.total()})}">+3.2%</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </th:block>
+    </section>
+</main>
+</body>
+</html>

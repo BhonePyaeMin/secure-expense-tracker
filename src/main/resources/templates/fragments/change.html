@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- A change between two periods. Arrow and sign as well as color, so it doesn't rely on color alone. -->
+<th:block th:fragment="change-cell(change)">
+    <span th:if="${change.isNew()}" class="change-up">New</span>
+    <span th:if="${change.isUp()}" class="change-up"
+          th:text="|▲ +${@money.format(change.difference())} (${change.percentText()})|">▲ +฿100.00 (+10.0%)</span>
+    <span th:if="${change.isDown()}" class="change-down"
+          th:text="|▼ ${@money.format(change.difference())} (${change.percentText()})|">▼ -฿200.00 (-50.0%)</span>
+    <span th:if="${change.difference().signum() == 0 and !change.isNew()}" class="muted">No change</span>
+</th:block>
+</body>
+</html>
