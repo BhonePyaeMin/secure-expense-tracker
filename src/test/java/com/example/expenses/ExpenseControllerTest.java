@@ -169,6 +169,35 @@ class ExpenseControllerTest {
     }
 
     @Test
+    void yourOwnHistoryBeatsTheKeywordRules() throws Exception {
+        when(expenseService.lastCategoryFor(1L, "grab ride")).thenReturn(java.util.Optional.of(Category.STUDY));
+
+        mockMvc.perform(get("/expenses/suggest-category").param("title", "grab ride").with(user(ALICE)))
+                .andExpect(jsonPath("$.category").value("STUDY"))
+                .andExpect(jsonPath("$.source").value("history"));
+    }
+
+    @Test
+    void quickAddUsesTheCategoryFromLastTime() throws Exception {
+        when(expenseService.lastCategoryFor(1L, "Lunch")).thenReturn(java.util.Optional.of(Category.OTHER));
+
+        mockMvc.perform(get("/expenses/new").param("quick", "lunch 85").with(user(ALICE)))
+                .andExpect(model().attribute("expenseForm", org.hamcrest.Matchers.hasProperty("category",
+                        org.hamcrest.Matchers.equalTo(Category.OTHER))));
+    }
+
+    @Test
+    void repeatAddsACopyForToday() throws Exception {
+        Expense copy = new Expense(null, "Coffee", new BigDecimal("55.00"), Category.FOOD, LocalDate.now(), null);
+        when(expenseService.repeat(eq(1L), eq(7L), any())).thenReturn(copy);
+
+        mockMvc.perform(post("/expenses/7/repeat").with(user(ALICE)).with(csrf()))
+                .andExpect(redirectedUrl("/expenses"));
+
+        verify(expenseService).repeat(1L, 7L, LocalDate.now());
+    }
+
+    @Test
     void noSuggestionGivesNoContent() throws Exception {
         mockMvc.perform(get("/expenses/suggest-category").param("title", "something else").with(user(ALICE)))
                 .andExpect(status().isNoContent());
@@ -183,7 +212,7 @@ class ExpenseControllerTest {
                 .andExpect(content().string(containsString("value=\"" + LocalDate.now().minusDays(1) + "\"")))
                 .andExpect(content().string(containsString("Check the details, then save.")));
 
-        verifyNoInteractions(expenseService);
+        verify(expenseService, org.mockito.Mockito.never()).create(any(), any());
     }
 
     @Test

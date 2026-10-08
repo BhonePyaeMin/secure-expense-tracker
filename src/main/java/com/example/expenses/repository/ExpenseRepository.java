@@ -19,6 +19,9 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
 
     long countByOwnerId(Long ownerId);
 
+    /** The most recent expense with this exact title, ignoring case (for pre-selecting its category). */
+    Optional<Expense> findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(Long ownerId, String title);
+
     /** One row per category: the database does the summing, so no expense rows are loaded. */
     @Query("""
             select new com.example.expenses.dto.CategoryTotal(e.category, sum(e.amount))

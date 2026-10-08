@@ -70,6 +70,9 @@
                     <td class="muted" data-label="Note" th:text="${e.note}">With friends</td>
                     <td class="actions">
                         <a th:href="@{/expenses/{id}/edit(id=${e.id})}">Edit</a>
+                        <form th:action="@{/expenses/{id}/repeat(id=${e.id})}" method="post">
+                            <button type="submit" class="link" th:title="|Add '${e.title}' again, dated today|">Repeat</button>
+                        </form>
                         <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post"
                               th:data-confirm="|Delete '${e.title}'? This can't be undone.|">
                             <button type="submit" class="link danger">Delete</button>

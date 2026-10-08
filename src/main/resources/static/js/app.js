@@ -42,7 +42,9 @@ document.addEventListener('submit', function (event) {
                         return;
                     }
                     category.value = suggestion ? suggestion.category : '';
-                    hint.textContent = suggestion ? 'Category suggested from the title' : '';
+                    hint.textContent = !suggestion ? ''
+                        : suggestion.source === 'history' ? 'Same category as last time'
+                        : 'Category suggested from the title';
                 })
                 .catch(function () {
                     // Suggestions are a nice-to-have; ignore network errors

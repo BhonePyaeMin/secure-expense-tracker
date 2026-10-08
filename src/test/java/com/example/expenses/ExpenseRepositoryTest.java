@@ -82,6 +82,17 @@ class ExpenseRepositoryTest {
     }
 
     @Test
+    void lastExpenseWithTheSameTitleIsFoundIgnoringCase() {
+        repository.save(new Expense(owner, "Coffee", new BigDecimal("50"), Category.FOOD, LocalDate.parse("2026-09-01"), null));
+        repository.save(new Expense(owner, "COFFEE", new BigDecimal("50"), Category.FUN, LocalDate.parse("2026-10-02"), null));
+
+        assertThat(repository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "coffee"))
+                .get().extracting(Expense::getCategory).isEqualTo(Category.FUN);
+        assertThat(repository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "not mine"))
+                .isEmpty();
+    }
+
+    @Test
     void monthFilterIncludesFirstAndLastDayOnly() {
         Page<Expense> page = search(new ExpenseFilter(YearMonth.of(2026, 10), null));
 

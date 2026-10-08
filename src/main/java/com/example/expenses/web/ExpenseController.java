@@ -3,6 +3,7 @@ package com.example.expenses.web;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.model.Expense;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
@@ -34,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Map;
+import java.util.Optional;
 
 @Controller
 public class ExpenseController {
@@ -97,20 +99,32 @@ public class ExpenseController {
     /** Used by app.js while typing a title: {"category":"TRANSPORT","label":"Transport"}, or 204 if no guess. */
     @GetMapping(value = "/expenses/suggest-category", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<Map<String, String>> suggestCategory(@RequestParam(defaultValue = "") String title) {
+    public ResponseEntity<Map<String, String>> suggestCategory(@AuthenticationPrincipal AppUserDetails user,
+                                                               @RequestParam(defaultValue = "") String title) {
         String text = title.length() > 200 ? title.substring(0, 200) : title;
+        // Your own history beats the keyword rules: "Lunch" goes wherever you put "Lunch" last time
+        Optional<Category> fromHistory = expenseService.lastCategoryFor(user.getId(), text);
+        if (fromHistory.isPresent()) {
+            return ResponseEntity.ok(suggestion(fromHistory.get(), "history"));
+        }
         return categorySuggester.suggest(text)
-                .map(c -> ResponseEntity.ok(Map.of("category", c.name(), "label", c.getLabel())))
+                .map(c -> ResponseEntity.ok(suggestion(c, "keywords")))
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    private static Map<String, String> suggestion(Category category, String source) {
+        return Map.of("category", category.name(), "label", category.getLabel(), "source", source);
     }
 
     /** The add form. With ?quick=lunch+85+yesterday it comes pre-filled from that text; nothing is saved yet. */
     @GetMapping("/expenses/new")
-    public String newForm(@RequestParam(required = false) String quick, Model model) {
+    public String newForm(@AuthenticationPrincipal AppUserDetails user,
+                          @RequestParam(required = false) String quick, Model model) {
         ExpenseForm form;
         if (StringUtils.hasText(quick)) {
             String text = quick.length() > 200 ? quick.substring(0, 200) : quick;
             form = quickEntryParser.parse(text, LocalDate.now());
+            expenseService.lastCategoryFor(user.getId(), form.getTitle()).ifPresent(form::setCategory);
             model.addAttribute("quickText", text);
         } else {
             form = new ExpenseForm();
@@ -149,6 +163,14 @@ public class ExpenseController {
         }
         expenseService.update(user.getId(), id, form);
         redirectAttributes.addFlashAttribute("message", "Expense updated.");
+        return "redirect:/expenses";
+    }
+
+    @PostMapping("/expenses/{id}/repeat")
+    public String repeat(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id,
+                         RedirectAttributes redirectAttributes) {
+        Expense copy = expenseService.repeat(user.getId(), id, LocalDate.now());
+        redirectAttributes.addFlashAttribute("message", "Added \"" + copy.getTitle() + "\" again for today.");
         return "redirect:/expenses";
     }
 

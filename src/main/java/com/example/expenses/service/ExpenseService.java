@@ -16,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Every method takes the logged-in user's id and only ever touches that user's expenses. */
 @Service
@@ -48,6 +50,25 @@ public class ExpenseService {
 
     public ExpenseForm formFor(Long userId, Long id) {
         return ExpenseForm.from(findOwned(userId, id));
+    }
+
+    /** The category used the last time this title was entered, ignoring case. */
+    public Optional<Category> lastCategoryFor(Long userId, String title) {
+        if (!StringUtils.hasText(title)) {
+            return Optional.empty();
+        }
+        return expenseRepository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(userId, title.trim())
+                .map(Expense::getCategory);
+    }
+
+    /** Adds a copy of an expense dated today, for things bought again (coffee, bus fare). */
+    @Transactional
+    public Expense repeat(Long userId, Long id, LocalDate today) {
+        Expense original = findOwned(userId, id);
+        Expense copy = expenseRepository.save(new Expense(original.getOwner(), original.getTitle(),
+                original.getAmount(), original.getCategory(), today, original.getNote()));
+        auditService.record(userId, AuditAction.EXPENSE_CREATED, describe(copy) + ", repeated from #" + id);
+        return copy;
     }
 
     @Transactional

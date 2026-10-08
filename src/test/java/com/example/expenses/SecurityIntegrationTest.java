@@ -276,6 +276,24 @@ class SecurityIntegrationTest {
         assertThat(expenseRepository.count()).isEqualTo(before);
     }
 
+    // --- Repeat ---
+
+    @Test
+    void repeatCopiesYourExpenseWithTodaysDateButNotSomeoneElses() throws Exception {
+        Expense groceries = expenseRepository.save(new Expense(alice, "Weekly groceries", new BigDecimal("410.00"),
+                Category.FOOD, LocalDate.now().minusDays(7), "Market"));
+
+        mockMvc.perform(post("/expenses/{id}/repeat", groceries.getId()).with(user(signedInAlice())).with(csrf()))
+                .andExpect(redirectedUrl("/expenses"));
+
+        assertThat(expenseRepository.findAll()).filteredOn(e -> e.getTitle().equals("Weekly groceries"))
+                .extracting(Expense::getDate)
+                .containsExactlyInAnyOrder(LocalDate.now().minusDays(7), LocalDate.now());
+
+        mockMvc.perform(post("/expenses/{id}/repeat", bobsExpense.getId()).with(user(signedInAlice())).with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
     // --- Income ---
 
     @Test
