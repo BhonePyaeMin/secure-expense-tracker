@@ -29,6 +29,7 @@ public class InsightsController {
         model.addAttribute("comparison", insightsService.compareWithPreviousMonth(user.getId(), selected, today));
         model.addAttribute("pace", insightsService.pace(user.getId(), selected, today).orElse(null));
         model.addAttribute("topExpenses", insightsService.topExpenses(user.getId(), selected));
+        model.addAttribute("weekdays", insightsService.spendingByWeekday(user.getId(), selected, today));
         return "insights";
     }
 }

@@ -112,6 +112,43 @@
         </th:block>
     </section>
 
+    <!-- Spending by weekday -->
+    <section class="insight">
+        <h2>Spending by weekday</h2>
+        <p class="muted" th:if="${weekdays.isEmpty()}">This month hasn't started yet.</p>
+        <th:block th:unless="${weekdays.isEmpty()}">
+            <p class="insight-headline" th:each="w : ${weekdays}" th:if="${w.highest()}"
+               th:text="|You spend the most on ${w.label()}s: ${@money.format(w.average())} a day on average.|">
+                You spend the most on Saturdays.</p>
+            <div class="table-wrap">
+                <table class="summary-table cards-on-mobile">
+                    <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th class="num">Total</th>
+                        <th class="num">Average</th>
+                        <th class="bar-col"><span class="sr-only">Average compared with the highest day</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="w : ${weekdays}" th:classappend="${w.highest()} ? 'highest'">
+                        <td class="title-cell" data-label="Day" th:text="${w.label()}">Saturday</td>
+                        <td class="num" data-label="Total" th:text="${@money.format(w.total())}">฿300.00</td>
+                        <td class="num" data-label="Average"
+                            th:text="|${@money.format(w.average())} × ${w.days()}|"
+                            th:title="|Average over ${w.days()} ${w.label()}s|">฿300.00 × 1</td>
+                        <td class="bar-col" data-label="Share">
+                            <div class="bar-track"><div class="bar" th:style="|width: ${w.barPercent()}%|"></div></div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted">Average is the total divided by how many of that weekday the month has had so far
+                (the number after ×).</p>
+        </th:block>
+    </section>
+
     <!-- Top 5 expenses -->
     <section class="insight">
         <h2>Top 5 expenses</h2>

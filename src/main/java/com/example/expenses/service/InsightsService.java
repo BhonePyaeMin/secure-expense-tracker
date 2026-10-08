@@ -3,8 +3,10 @@ package com.example.expenses.service;
 import com.example.expenses.dto.CategoryComparison;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.Change;
+import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthComparison;
 import com.example.expenses.dto.SpendingPace;
+import com.example.expenses.dto.WeekdaySpending;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
 import com.example.expenses.repository.ExpenseRepository;
@@ -14,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -41,6 +45,46 @@ public class InsightsService {
     public List<Expense> topExpenses(Long userId, YearMonth month) {
         return expenseRepository.findTop5ByOwnerIdAndDeletedAtIsNullAndDateBetweenOrderByAmountDescDateDescIdDesc(
                 userId, month.atDay(1), month.atEndOfMonth());
+    }
+
+    /**
+     * Total and average spending per day of the week, Monday first. For the current month only the
+     * days up to today count, so the averages aren't pulled down by days that haven't happened yet.
+     */
+    public List<WeekdaySpending> spendingByWeekday(Long userId, YearMonth month, LocalDate today) {
+        YearMonth current = YearMonth.from(today);
+        if (month.isAfter(current)) {
+            return List.of();
+        }
+        LocalDate start = month.atDay(1);
+        LocalDate end = month.equals(current) ? today : month.atEndOfMonth();
+
+        Map<DayOfWeek, Integer> days = new EnumMap<>(DayOfWeek.class);
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            days.merge(date.getDayOfWeek(), 1, Integer::sum);
+        }
+        Map<DayOfWeek, BigDecimal> totals = new EnumMap<>(DayOfWeek.class);
+        for (DailyTotal daily : expenseRepository.dailyTotals(userId, start, end)) {
+            totals.merge(daily.date().getDayOfWeek(), daily.total(), BigDecimal::add);
+        }
+
+        Map<DayOfWeek, BigDecimal> averages = new EnumMap<>(DayOfWeek.class);
+        days.forEach((day, count) -> averages.put(day,
+                totals.getOrDefault(day, BigDecimal.ZERO).divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP)));
+        BigDecimal highest = averages.values().stream().max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+
+        List<WeekdaySpending> result = new ArrayList<>();
+        for (DayOfWeek day : DayOfWeek.values()) {
+            if (!days.containsKey(day)) {
+                continue; // e.g. on the 3rd of a month only three weekdays have happened
+            }
+            BigDecimal average = averages.get(day);
+            BigDecimal barPercent = highest.signum() == 0 ? BigDecimal.ZERO
+                    : average.multiply(BigDecimal.valueOf(100)).divide(highest, 1, RoundingMode.HALF_UP);
+            result.add(new WeekdaySpending(day, money(totals.getOrDefault(day, BigDecimal.ZERO)), days.get(day),
+                    average, barPercent, highest.signum() > 0 && average.compareTo(highest) == 0));
+        }
+        return result;
     }
 
     /** Daily average and end-of-month projection; empty for a month that hasn't started. */

@@ -5,6 +5,8 @@ import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.Change;
 import com.example.expenses.dto.MonthComparison;
 import com.example.expenses.dto.SpendingPace;
+import com.example.expenses.dto.WeekdaySpending;
+import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.RecurringExpenseRepository;
@@ -12,6 +14,7 @@ import com.example.expenses.service.InsightsService;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -181,6 +184,49 @@ class InsightsServiceTest {
         assertThat(pace.dailyAverage()).isEqualByComparingTo("100.00");          // 800 over 8 days
         assertThat(pace.projection()).isEqualByComparingTo("3519.00");           // 800 + 100 x 23 + 419
         assertThat(insightsService.pace(USER_ID, YearMonth.of(2026, 11), TODAY)).isEmpty();
+    }
+
+    // --- Spending by weekday ---
+
+    @Test
+    void weekdayAveragesDivideByHowManyOfThatDayTheMonthHasHad() {
+        // 1 October 2026 is a Thursday; up to the 8th there are two Thursdays and one of every other day
+        when(expenseRepository.dailyTotals(USER_ID, LocalDate.of(2026, 10, 1), TODAY)).thenReturn(List.of(
+                new DailyTotal(LocalDate.of(2026, 10, 1), new BigDecimal("100")),
+                new DailyTotal(LocalDate.of(2026, 10, 3), new BigDecimal("300")),
+                new DailyTotal(LocalDate.of(2026, 10, 8), new BigDecimal("200"))));
+
+        List<WeekdaySpending> weekdays = insightsService.spendingByWeekday(USER_ID, OCTOBER, TODAY);
+
+        assertThat(weekdays).extracting(WeekdaySpending::day).containsExactly(DayOfWeek.values());
+        WeekdaySpending thursday = weekdays.get(3);
+        assertThat(thursday.days()).isEqualTo(2);
+        assertThat(thursday.total()).isEqualByComparingTo("300");
+        assertThat(thursday.average()).isEqualByComparingTo("150.00");
+        assertThat(thursday.barPercent()).isEqualByComparingTo("50.0");
+        WeekdaySpending saturday = weekdays.get(5);
+        assertThat(saturday.average()).isEqualByComparingTo("300.00");
+        assertThat(saturday.highest()).isTrue();
+        assertThat(weekdays).filteredOn(WeekdaySpending::highest).hasSize(1);
+        assertThat(weekdays.get(0).average()).isEqualByComparingTo("0"); // Monday: nothing spent
+    }
+
+    @Test
+    void earlyInTheMonthOnlyTheDaysSoFarAppear() {
+        List<WeekdaySpending> weekdays = insightsService.spendingByWeekday(USER_ID, OCTOBER, LocalDate.of(2026, 10, 3));
+
+        assertThat(weekdays).extracting(WeekdaySpending::day)
+                .containsExactly(DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY);
+        assertThat(weekdays).noneMatch(WeekdaySpending::highest); // nothing spent at all
+    }
+
+    @Test
+    void aFinishedMonthCountsAllItsDays() {
+        // September 2026 starts on a Tuesday: five Tuesdays and Wednesdays, four of every other day
+        List<WeekdaySpending> weekdays = insightsService.spendingByWeekday(USER_ID, YearMonth.of(2026, 9), TODAY);
+
+        assertThat(weekdays).extracting(WeekdaySpending::days).containsExactly(4, 5, 5, 4, 4, 4, 4);
+        assertThat(insightsService.spendingByWeekday(USER_ID, YearMonth.of(2026, 11), TODAY)).isEmpty();
     }
 
     private static BigDecimal money(String amount) {

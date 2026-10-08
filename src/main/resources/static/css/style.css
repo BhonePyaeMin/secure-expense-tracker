@@ -428,6 +428,10 @@ tr.over .bar {
     white-space: nowrap;
 }
 
+tr.highest td {
+    font-weight: 600;
+}
+
 tr.total-row td {
     font-weight: 600;
     border-top: 2px solid var(--border);
