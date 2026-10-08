@@ -42,6 +42,9 @@ public class RecurringExpense {
     @Column(length = 200)
     private String note;
 
+    @Column(name = "payment_method", length = 20)
+    private PaymentMethod paymentMethod;
+
     // The day it was first due, e.g. 31. Shorter months use their last day instead.
     @Column(name = "day_of_month", nullable = false)
     private int dayOfMonth;
@@ -56,12 +59,13 @@ public class RecurringExpense {
     }
 
     public RecurringExpense(User owner, String title, BigDecimal amount, Category category, String note,
-                            LocalDate firstDueDate) {
+                            PaymentMethod paymentMethod, LocalDate firstDueDate) {
         this.owner = owner;
         this.title = title;
         this.amount = amount;
         this.category = category;
         this.note = note;
+        this.paymentMethod = paymentMethod;
         this.dayOfMonth = firstDueDate.getDayOfMonth();
         this.nextDueDate = firstDueDate;
         this.active = true;
@@ -111,6 +115,10 @@ public class RecurringExpense {
 
     public String getNote() {
         return note;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
     }
 
     public int getDayOfMonth() {

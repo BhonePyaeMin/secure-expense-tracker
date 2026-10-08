@@ -1,6 +1,7 @@
 package com.example.expenses.dto;
 
 import com.example.expenses.model.Category;
+import com.example.expenses.model.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,9 @@ public class RecurringForm {
 
     @Size(max = 200, message = "Note must be at most 200 characters")
     private String note;
+
+    // Optional; copied to every expense this creates
+    private PaymentMethod paymentMethod;
 
     public String getTitle() {
         return title;
@@ -69,5 +73,13 @@ public class RecurringForm {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

@@ -2,6 +2,7 @@ package com.example.expenses.service;
 
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.model.PaymentMethod;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
@@ -117,6 +118,12 @@ public class CsvImportService {
                     () -> errors.add("\"" + category + "\" is not a category"));
         } else {
             form.setCategory(categorySuggester.suggest(form.getTitle()).orElse(Category.OTHER));
+        }
+
+        String paymentMethod = cell(row, columns, "payment_method");
+        if (StringUtils.hasText(paymentMethod)) {
+            PaymentMethod.parse(paymentMethod).ifPresentOrElse(form::setPaymentMethod,
+                    () -> errors.add("\"" + paymentMethod + "\" is not a payment method"));
         }
 
         String note = cell(row, columns, "note");

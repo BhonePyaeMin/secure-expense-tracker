@@ -7,6 +7,7 @@ import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlyBalance;
 import com.example.expenses.dto.MonthlySummary;
+import com.example.expenses.dto.PaymentMethodTotal;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.BudgetRepository;
@@ -96,6 +97,16 @@ public class SummaryService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal perDay = remaining.divide(BigDecimal.valueOf(daysLeft), 2, RoundingMode.FLOOR);
         return Optional.of(new DailyAllowance(remaining, daysLeft, perDay));
+    }
+
+    /** Spending per payment method for the month, with each one's share of the total. */
+    public List<PaymentMethodTotal> paymentTotals(Long userId, YearMonth month) {
+        List<PaymentMethodTotal> totals =
+                expenseRepository.totalsByPaymentMethod(userId, month.atDay(1), month.atEndOfMonth());
+        BigDecimal sum = totals.stream().map(PaymentMethodTotal::total).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return totals.stream()
+                .map(t -> new PaymentMethodTotal(t.method(), money(t.total()), percent(t.total(), sum)))
+                .toList();
     }
 
     /** Income minus spending for the summary's month. */

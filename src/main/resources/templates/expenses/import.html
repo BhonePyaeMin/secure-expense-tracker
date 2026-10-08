@@ -36,6 +36,7 @@
             <li><strong>date</strong>: required, <code>2026-10-31</code> or <code>31/10/2026</code></li>
             <li><strong>category</strong>: optional; if empty it's guessed from the title, otherwise Other</li>
             <li><strong>note</strong>: optional</li>
+            <li><strong>payment_method</strong>: optional, one of Cash, Bank transfer, PromptPay, E-wallet, Card</li>
         </ul>
         <p>A file from <a th:href="@{/expenses/export}">Export CSV</a> imports back as-is. Every row is checked first,
             and nothing is saved unless all rows are valid. Up to 2,000 rows and 1 MB per file.</p>

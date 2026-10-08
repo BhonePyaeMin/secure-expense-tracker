@@ -91,6 +91,14 @@
                 <p class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Error</p>
             </div>
             <div class="field">
+                <label for="paymentMethod">Paid with</label>
+                <select th:field="*{paymentMethod}" th:errorclass="field-error">
+                    <option value="">Not set</option>
+                    <option th:each="m : ${paymentMethods}" th:value="${m}" th:text="${m.label}">Cash</option>
+                </select>
+            </div>
+
+            <div class="field">
                 <label for="note">Note <span class="muted">(optional)</span></label>
                 <input type="text" th:field="*{note}" th:errorclass="field-error" maxlength="200">
                 <p class="error" th:if="${#fields.hasErrors('note')}" th:errors="*{note}">Error</p>

@@ -5,6 +5,7 @@ import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.AuditAction;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.PaymentMethod;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.ExpenseSpecifications;
 import com.example.expenses.repository.UserRepository;
@@ -68,8 +69,10 @@ public class ExpenseService {
     @Transactional
     public Expense repeat(Long userId, Long id, LocalDate today) {
         Expense original = findOwned(userId, id);
-        Expense copy = expenseRepository.save(new Expense(original.getOwner(), original.getTitle(),
-                original.getAmount(), original.getCategory(), today, original.getNote()));
+        Expense copy = new Expense(original.getOwner(), original.getTitle(),
+                original.getAmount(), original.getCategory(), today, original.getNote());
+        copy.setPaymentMethod(original.getPaymentMethod());
+        expenseRepository.save(copy);
         auditService.record(userId, AuditAction.EXPENSE_CREATED, describe(copy) + ", repeated from #" + id);
         return copy;
     }
@@ -107,6 +110,7 @@ public class ExpenseService {
         addChange(changes, "category", existing.getCategory(), form.getCategory());
         addChange(changes, "date", existing.getDate(), form.getDate());
         addChange(changes, "note", existing.getNote(), cleanNote(form));
+        addChange(changes, "paid with", existing.getPaymentMethod(), form.getPaymentMethod());
 
         if (!Objects.equals(existing.getDate(), form.getDate())) {
             existing.setRecurringExpenseId(null); // moved to another day: no longer that month's occurrence
@@ -171,6 +175,7 @@ public class ExpenseService {
         target.setCategory(source.getCategory());
         target.setDate(source.getDate());
         target.setNote(cleanNote(source));
+        target.setPaymentMethod(source.getPaymentMethod());
     }
 
     private static String cleanTitle(ExpenseForm form) {
@@ -204,6 +209,9 @@ public class ExpenseService {
         }
         if (value instanceof Category category) {
             return category.getLabel();
+        }
+        if (value instanceof PaymentMethod method) {
+            return method.getLabel();
         }
         if (value instanceof String text) {
             return "\"" + text + "\"";

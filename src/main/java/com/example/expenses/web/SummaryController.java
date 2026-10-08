@@ -77,6 +77,7 @@ public class SummaryController {
         model.addAttribute("balance", summaryService.balance(userId, summary));
         model.addAttribute("allowance", summaryService.dailyAllowance(summary, LocalDate.now()).orElse(null));
         model.addAttribute("daily", summaryService.dailySpending(userId, selected));
+        model.addAttribute("payments", summaryService.paymentTotals(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));
     }
 

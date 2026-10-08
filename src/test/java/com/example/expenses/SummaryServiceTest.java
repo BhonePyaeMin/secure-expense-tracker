@@ -169,6 +169,20 @@ class SummaryServiceTest {
         assertThat(balance.isNegative()).isTrue();
     }
 
+    @Test
+    void paymentTotalsGetTheirShareOfTheMonth() {
+        when(expenseRepository.totalsByPaymentMethod(USER_ID, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
+                .thenReturn(List.of(
+                        new com.example.expenses.dto.PaymentMethodTotal(com.example.expenses.model.PaymentMethod.PROMPTPAY, new BigDecimal("750")),
+                        new com.example.expenses.dto.PaymentMethodTotal(null, new BigDecimal("250"))));
+
+        var totals = summaryService.paymentTotals(USER_ID, OCTOBER);
+
+        assertThat(totals).extracting(t -> t.label(), t -> t.percent().toPlainString())
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("PromptPay", "75.0"),
+                        org.assertj.core.groups.Tuple.tuple("Not set", "25.0"));
+    }
+
     // --- Daily allowance: remaining budget / days left (today included) ---
 
     @Test

@@ -2,6 +2,7 @@ package com.example.expenses.repository;
 
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.DailyTotal;
+import com.example.expenses.dto.PaymentMethodTotal;
 import com.example.expenses.model.Expense;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +48,18 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     List<CategoryTotal> totalsByCategory(@Param("ownerId") Long ownerId,
                                          @Param("from") LocalDate from,
                                          @Param("to") LocalDate to);
+
+    /** One row per payment method used (null = not set), biggest first. */
+    @Query("""
+            select new com.example.expenses.dto.PaymentMethodTotal(e.paymentMethod, sum(e.amount))
+            from Expense e
+            where e.owner.id = :ownerId and e.date between :from and :to and e.deletedAt is null
+            group by e.paymentMethod
+            order by sum(e.amount) desc
+            """)
+    List<PaymentMethodTotal> totalsByPaymentMethod(@Param("ownerId") Long ownerId,
+                                                   @Param("from") LocalDate from,
+                                                   @Param("to") LocalDate to);
 
     /** One row per day that has spending, oldest first. */
     @Query("""

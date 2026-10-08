@@ -145,8 +145,8 @@ class ExpenseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"expenses-2026-10.csv\""))
-                .andExpect(content().string("\uFEFFid,title,amount,category,date,note\r\n"
-                        + "null,\"Lunch, with \"\"Bob\"\"\",85.00,FOOD,2026-10-01,\r\n"));
+                .andExpect(content().string("\uFEFFid,title,amount,category,date,note,payment_method\r\n"
+                        + "null,\"Lunch, with \"\"Bob\"\"\",85.00,FOOD,2026-10-01,,\r\n"));
     }
 
     @Test
@@ -213,6 +213,23 @@ class ExpenseControllerTest {
                 .andExpect(content().string(containsString("Check the details, then save.")));
 
         verify(expenseService, org.mockito.Mockito.never()).create(any(), any());
+    }
+
+    @Test
+    void newExpensesDefaultToCashAndThePaymentMethodIsSaved() throws Exception {
+        mockMvc.perform(get("/expenses/new").with(user(ALICE)))
+                .andExpect(content().string(containsString("<option value=\"CASH\" selected=\"selected\">Cash</option>")));
+
+        mockMvc.perform(post("/expenses").with(user(ALICE)).with(csrf())
+                        .param("title", "Bubble tea")
+                        .param("amount", "60")
+                        .param("category", "FOOD")
+                        .param("date", LocalDate.now().toString())
+                        .param("paymentMethod", "PROMPTPAY"))
+                .andExpect(redirectedUrl("/expenses"));
+
+        verify(expenseService).create(eq(1L), org.mockito.ArgumentMatchers.argThat(form ->
+                form.getPaymentMethod() == com.example.expenses.model.PaymentMethod.PROMPTPAY));
     }
 
     @Test

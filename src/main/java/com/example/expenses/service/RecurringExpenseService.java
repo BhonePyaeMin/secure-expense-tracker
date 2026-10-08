@@ -48,7 +48,7 @@ public class RecurringExpenseService {
         String note = StringUtils.hasText(form.getNote()) ? form.getNote().trim() : null;
         RecurringExpense recurring = recurringRepository.save(new RecurringExpense(
                 userRepository.getReferenceById(userId), form.getTitle().trim(), form.getAmount(),
-                form.getCategory(), note, form.getFirstDate()));
+                form.getCategory(), note, form.getPaymentMethod(), form.getFirstDate()));
         auditService.record(userId, AuditAction.RECURRING_CREATED, recurring.getTitle() + " ("
                 + recurring.getAmount().toPlainString() + ") every month on day " + recurring.getDayOfMonth()
                 + ", starting " + recurring.getNextDueDate());
@@ -107,6 +107,7 @@ public class RecurringExpenseService {
                 Expense expense = new Expense(recurring.getOwner(), recurring.getTitle(), recurring.getAmount(),
                         recurring.getCategory(), due, noteFor(recurring));
                 expense.setRecurringExpenseId(recurring.getId());
+                expense.setPaymentMethod(recurring.getPaymentMethod());
                 expenseRepository.save(expense);
                 auditService.record(recurring.getOwner().getId(), AuditAction.RECURRING_ADDED, "#" + expense.getId()
                         + " " + expense.getTitle() + " (" + expense.getAmount().toPlainString() + ", " + due + ")");

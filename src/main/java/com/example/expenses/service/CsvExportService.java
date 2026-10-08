@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class CsvExportService {
 
-    static final String HEADER = "id,title,amount,category,date,note";
+    static final String HEADER = "id,title,amount,category,date,note,payment_method";
     private static final String LINE_END = "\r\n";
 
     /** Writes one row per expense. Starts with a UTF-8 byte order mark so Excel shows ฿ and Thai text correctly. */
@@ -25,7 +25,8 @@ public class CsvExportService {
                     expense.getAmount().toPlainString(),
                     expense.getCategory().name(),
                     expense.getDate().toString(),
-                    Csv.escape(expense.getNote())));
+                    Csv.escape(expense.getNote()),
+                    expense.getPaymentMethod() == null ? "" : expense.getPaymentMethod().name()));
             writer.write(LINE_END);
         }
         writer.flush();

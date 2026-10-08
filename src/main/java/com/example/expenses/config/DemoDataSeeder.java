@@ -4,6 +4,7 @@ import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
 import com.example.expenses.model.Income;
+import com.example.expenses.model.PaymentMethod;
 import com.example.expenses.model.User;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
@@ -95,9 +96,14 @@ public class DemoDataSeeder implements ApplicationRunner {
             return;
         }
         List<Expense> expenses = new ArrayList<>();
-        for (Object[] sample : SAMPLES) {
-            expenses.add(new Expense(demo, (String) sample[1], new BigDecimal((String) sample[2]),
-                    (Category) sample[3], today.minusDays((Integer) sample[0]), (String) sample[4]));
+        PaymentMethod[] methods = {PaymentMethod.CASH, PaymentMethod.PROMPTPAY, PaymentMethod.EWALLET,
+                PaymentMethod.CASH, PaymentMethod.CARD};
+        for (int i = 0; i < SAMPLES.length; i++) {
+            Object[] sample = SAMPLES[i];
+            Expense expense = new Expense(demo, (String) sample[1], new BigDecimal((String) sample[2]),
+                    (Category) sample[3], today.minusDays((Integer) sample[0]), (String) sample[4]);
+            expense.setPaymentMethod(sample[3] == Category.RENT ? PaymentMethod.BANK : methods[i % methods.length]);
+            expenses.add(expense);
         }
         expenseRepository.saveAll(expenses);
         budgetRepository.saveAll(List.of(

@@ -2,6 +2,7 @@ package com.example.expenses.web;
 
 import com.example.expenses.dto.RecurringForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.model.PaymentMethod;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.RecurringExpenseService;
 import jakarta.validation.Valid;
@@ -32,6 +33,11 @@ public class RecurringController {
     @ModelAttribute("categories")
     Category[] categories() {
         return Category.values();
+    }
+
+    @ModelAttribute("paymentMethods")
+    PaymentMethod[] paymentMethods() {
+        return PaymentMethod.values();
     }
 
     @GetMapping("/recurring")

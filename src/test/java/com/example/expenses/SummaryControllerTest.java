@@ -96,6 +96,19 @@ class SummaryControllerTest {
     }
 
     @Test
+    void summaryShowsTotalsPerPaymentMethod() throws Exception {
+        when(summaryService.summarize(1L, OCTOBER)).thenReturn(new MonthlySummary(OCTOBER, new BigDecimal("1000.00"), List.of()));
+        when(summaryService.paymentTotals(1L, OCTOBER)).thenReturn(List.of(
+                new com.example.expenses.dto.PaymentMethodTotal(com.example.expenses.model.PaymentMethod.PROMPTPAY,
+                        new BigDecimal("750.00"), new BigDecimal("75.0"))));
+
+        mockMvc.perform(get("/summary").param("month", "2026-10").with(user(ALICE)))
+                .andExpect(content().string(containsString("By payment method")))
+                .andExpect(content().string(containsString("PromptPay")))
+                .andExpect(content().string(containsString("75.0%")));
+    }
+
+    @Test
     void summaryPageHighlightsOverBudgetRows() throws Exception {
         when(summaryService.summarize(1L, OCTOBER)).thenReturn(new MonthlySummary(OCTOBER, new BigDecimal("3100.00"), List.of(
                 new CategorySummary(Category.FOOD, new BigDecimal("3100.00"), new BigDecimal("3000.00"),

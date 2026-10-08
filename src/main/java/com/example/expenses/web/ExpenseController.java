@@ -4,6 +4,7 @@ import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.PaymentMethod;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
@@ -60,6 +61,11 @@ public class ExpenseController {
     @ModelAttribute("categories")
     Category[] categories() {
         return Category.values();
+    }
+
+    @ModelAttribute("paymentMethods")
+    PaymentMethod[] paymentMethods() {
+        return PaymentMethod.values();
     }
 
     @GetMapping("/")
@@ -131,6 +137,7 @@ public class ExpenseController {
             form = new ExpenseForm();
             form.setDate(LocalDate.now());
         }
+        form.setPaymentMethod(PaymentMethod.CASH); // the most common; easy to change
         model.addAttribute("expenseForm", form);
         return FORM_VIEW;
     }

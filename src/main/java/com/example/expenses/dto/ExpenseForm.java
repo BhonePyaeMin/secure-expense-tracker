@@ -2,6 +2,7 @@ package com.example.expenses.dto;
 
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.PaymentMethod;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -37,6 +38,9 @@ public class ExpenseForm {
     @Size(max = 255, message = "Note must be at most 255 characters")
     private String note;
 
+    // Optional: older expenses and some imports don't have one
+    private PaymentMethod paymentMethod;
+
     public static ExpenseForm from(Expense expense) {
         ExpenseForm form = new ExpenseForm();
         form.setTitle(expense.getTitle());
@@ -44,6 +48,7 @@ public class ExpenseForm {
         form.setCategory(expense.getCategory());
         form.setDate(expense.getDate());
         form.setNote(expense.getNote());
+        form.setPaymentMethod(expense.getPaymentMethod());
         return form;
     }
 
@@ -85,5 +90,13 @@ public class ExpenseForm {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }

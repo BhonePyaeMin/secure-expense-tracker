@@ -108,6 +108,23 @@ class ExpenseRepositoryTest {
     }
 
     @Test
+    void totalsByPaymentMethodGroupNotSetSeparatelyAndSkipOtherUsersAndTrash() {
+        Expense card = new Expense(owner, "Shoes", new BigDecimal("1000.00"), Category.OTHER, LocalDate.parse("2026-10-03"), null);
+        card.setPaymentMethod(com.example.expenses.model.PaymentMethod.CARD);
+        repository.save(card);
+        Expense trashed = new Expense(owner, "Returned", new BigDecimal("500.00"), Category.OTHER, LocalDate.parse("2026-10-04"), null);
+        trashed.setPaymentMethod(com.example.expenses.model.PaymentMethod.CARD);
+        trashed.moveToTrash(java.time.Instant.now());
+        repository.save(trashed);
+
+        var totals = repository.totalsByPaymentMethod(owner.getId(), LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+
+        // The October expenses from setUp have no payment method: 12.50 + 300.00 + 2.40
+        assertThat(totals).extracting(t -> t.label(), t -> t.total().stripTrailingZeros().toPlainString())
+                .containsExactly(tuple("Card", "1000"), tuple("Not set", "314.9"));
+    }
+
+    @Test
     void monthFilterIncludesFirstAndLastDayOnly() {
         Page<Expense> page = search(new ExpenseFilter(YearMonth.of(2026, 10), null));
 

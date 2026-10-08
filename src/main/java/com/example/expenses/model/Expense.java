@@ -51,6 +51,10 @@ public class Expense {
     @Column(length = 255)
     private String note;
 
+    // Null for expenses recorded before payment methods existed (shown as "Not set")
+    @Column(name = "payment_method", length = 20)
+    private PaymentMethod paymentMethod;
+
     // Set when created by a RecurringExpense; null for everything typed in or imported
     @Column(name = "recurring_expense_id")
     private Long recurringExpenseId;
@@ -121,6 +125,14 @@ public class Expense {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public boolean isDeleted() {

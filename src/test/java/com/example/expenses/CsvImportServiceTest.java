@@ -92,6 +92,20 @@ class CsvImportServiceTest {
     }
 
     @Test
+    void paymentMethodColumnIsOptionalAndValidated() {
+        CsvImportService.Result ok = importService.read("""
+                title,amount,date,payment_method
+                Lunch,85,2026-10-01,PromptPay
+                Bus,15,2026-10-01,
+                """);
+        assertThat(ok.expenses()).extracting(ExpenseForm::getPaymentMethod)
+                .containsExactly(com.example.expenses.model.PaymentMethod.PROMPTPAY, null);
+
+        CsvImportService.Result bad = importService.read("title,amount,date,payment_method\nLunch,85,2026-10-01,Bitcoin\n");
+        assertThat(bad.errors()).containsExactly("Row 2: \"Bitcoin\" is not a payment method");
+    }
+
+    @Test
     void missingRequiredColumnsAreReported() {
         CsvImportService.Result result = importService.read("name,price\nLunch,85\n");
 
@@ -102,6 +116,7 @@ class CsvImportServiceTest {
     void anExportedFileImportsBackUnchanged() throws Exception {
         Expense tricky = new Expense(null, "=SUM(A1) \"quoted\", with comma", new BigDecimal("12.34"),
                 Category.FUN, LocalDate.of(2026, 9, 30), "line 1\nline 2");
+        tricky.setPaymentMethod(com.example.expenses.model.PaymentMethod.EWALLET);
         StringWriter exported = new StringWriter();
         new CsvExportService().write(List.of(tricky), exported);
 
@@ -114,5 +129,6 @@ class CsvImportServiceTest {
         assertThat(back.getCategory()).isEqualTo(Category.FUN);
         assertThat(back.getDate()).isEqualTo(tricky.getDate());
         assertThat(back.getNote()).isEqualTo(tricky.getNote());
+        assertThat(back.getPaymentMethod()).isEqualTo(com.example.expenses.model.PaymentMethod.EWALLET);
     }
 }

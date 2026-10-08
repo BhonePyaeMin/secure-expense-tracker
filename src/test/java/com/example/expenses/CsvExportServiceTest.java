@@ -53,12 +53,13 @@ class CsvExportServiceTest {
     @Test
     void writesHeaderAndOneRowPerExpense() throws Exception {
         Expense expense = new Expense(null, "Lunch", new BigDecimal("85.50"), Category.FOOD, LocalDate.of(2026, 10, 1), "With \"Am\", Bo");
+        expense.setPaymentMethod(com.example.expenses.model.PaymentMethod.PROMPTPAY);
         StringWriter out = new StringWriter();
 
         exportService.write(List.of(expense), out);
 
         assertThat(out.toString()).isEqualTo("\uFEFF"
-                + "id,title,amount,category,date,note\r\n"
-                + "null,Lunch,85.50,FOOD,2026-10-01,\"With \"\"Am\"\", Bo\"\r\n");
+                + "id,title,amount,category,date,note,payment_method\r\n"
+                + "null,Lunch,85.50,FOOD,2026-10-01,\"With \"\"Am\"\", Bo\",PROMPTPAY\r\n");
     }
 }

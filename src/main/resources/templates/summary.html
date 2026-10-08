@@ -129,6 +129,32 @@
         </table>
     </div>
 
+    <section class="budgets" th:unless="${payments.isEmpty()}">
+        <h2>By payment method</h2>
+        <div class="table-wrap">
+            <table class="summary-table cards-on-mobile">
+                <thead>
+                <tr>
+                    <th>Paid with</th>
+                    <th class="num">Spent</th>
+                    <th class="bar-col"><span class="sr-only">Share of spending</span></th>
+                    <th class="num">Share</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${payments}">
+                    <td class="title-cell" data-label="Paid with" th:text="${p.label()}">PromptPay</td>
+                    <td class="num" data-label="Spent" th:text="${@money.format(p.total())}">฿620.00</td>
+                    <td class="bar-col" data-label="Share">
+                        <div class="bar-track"><div class="bar" th:style="|width: ${p.percent()}%|"></div></div>
+                    </td>
+                    <td class="num" data-label="%" th:text="|${p.percent()}%|">49.7%</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <section class="budgets">
         <h2>Monthly budgets</h2>
         <p class="muted">Set a limit per category. Saving a category that already has a budget updates it.</p>
