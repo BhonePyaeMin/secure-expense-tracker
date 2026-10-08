@@ -44,9 +44,18 @@
                     <span class="stat-value" th:text="${@money.format(pace.projection())}">฿4,830.00</span>
                 </div>
             </div>
-            <p class="muted" th:unless="${pace.finished()}"
-               th:text="|How the projection is worked out: ${@money.format(pace.spent())} spent so far, plus your day-to-day pace of ${@money.format(pace.dayToDayAverage())} a day for the ${pace.daysLeft()} days left, plus ${@money.format(pace.upcomingRecurring())} of recurring expenses still due this month. Recurring expenses already added (${@money.format(pace.fixedSpent())}) aren't counted in the pace, because they happen once a month, not every day.|">
-                How the projection is worked out.</p>
+            <p class="muted" th:if="${!pace.finished() and pace.daysLeft() == 0}">
+                Today is the last day of the month, so the projection is what you've spent.</p>
+            <p class="muted" th:if="${!pace.finished() and pace.daysLeft() > 0}">
+                How the projection is worked out:
+                <span th:text="|${@money.format(pace.spent())} spent so far, plus your day-to-day pace of ${@money.format(pace.dayToDayAverage())} a day for the ${pace.daysLeft()} ${pace.daysLeft() == 1 ? 'day' : 'days'} left|">
+                    spent so far, plus your pace for the days left</span><span th:if="${pace.upcomingRecurring().signum() > 0}"
+                    th:text="|, plus ${@money.format(pace.upcomingRecurring())} of recurring expenses still due this month|">,
+                    plus recurring expenses still due</span>.
+                <span th:if="${pace.fixedSpent().signum() > 0}"
+                      th:text="|Recurring expenses already added (${@money.format(pace.fixedSpent())}) aren't counted in the pace, because they happen once a month, not every day.|">
+                    Recurring expenses already added aren't counted in the pace.</span>
+            </p>
             <p class="muted" th:if="${pace.finished()}">This month is over, so the total above is final.</p>
         </th:block>
     </section>
