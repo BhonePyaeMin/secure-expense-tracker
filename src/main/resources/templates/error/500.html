@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Something went wrong · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow">
+    <!-- Never show the error itself here: details are in the server log (logs/app.log) only -->
+    <div class="notice">
+        <p class="muted">500</p>
+        <h1>Something went wrong</h1>
+        <p>The app hit an unexpected problem and couldn't finish that. Your data is safe: nothing was half-saved.
+            Please go back and try again.</p>
+        <a class="button" th:href="@{/expenses}">Back to expenses</a>
+    </div>
+</main>
+</body>
+</html>

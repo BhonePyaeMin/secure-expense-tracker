@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Page not found · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow">
+    <div class="notice">
+        <p class="muted">404</p>
+        <h1>Page not found</h1>
+        <p>There's no page at this address. The link may be old or mistyped.</p>
+        <a class="button" th:href="@{/expenses}">Back to expenses</a>
+    </div>
+</main>
+</body>
+</html>

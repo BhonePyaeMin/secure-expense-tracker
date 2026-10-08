@@ -66,7 +66,7 @@ public class SavingsGoal {
     /** @throws IllegalArgumentException when taking out more than has been saved */
     public void withdraw(BigDecimal amount) {
         if (amount.compareTo(savedAmount) > 0) {
-            throw new IllegalArgumentException("Only " + savedAmount.toPlainString() + " saved");
+            throw new IllegalArgumentException("Can't take out more than is saved");
         }
         savedAmount = savedAmount.subtract(amount);
     }

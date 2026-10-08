@@ -122,8 +122,9 @@ public class DemoDataSeeder implements ApplicationRunner {
                 new Budget(demo, Category.FOOD, new BigDecimal("3000.00")),
                 new Budget(demo, Category.TRANSPORT, new BigDecimal("1000.00")),
                 new Budget(demo, Category.FUN, new BigDecimal("500.00"))));
-        log.info("Demo profile: seeded {} expenses and 3 budgets. Sign in as {} / {}",
-                expenses.size(), DEMO_USERNAME, DEMO_PASSWORD);
+        // Never log the password (it's in the README)
+        log.info("Demo profile: seeded {} expenses and 3 budgets. Sign in as \"{}\"",
+                expenses.size(), DEMO_USERNAME);
     }
 
     // Separate from the expenses so a demo database from before income existed gets some too
