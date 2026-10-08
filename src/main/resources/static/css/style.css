@@ -9,6 +9,7 @@
     --accent: #2563eb;
     --accent-dark: #1d4ed8;
     --danger: #c0392b;
+    --danger-bg: #fdecea;
     --success-bg: #e8f5ec;
     --success-text: #1e6b3a;
     --radius: 8px;
@@ -245,6 +246,113 @@ tbody tr:last-child td {
 .actions form {
     display: inline;
     margin-left: 0.75rem;
+}
+
+/* Summary */
+
+h2 {
+    font-size: 1.15rem;
+    margin: 0 0 0.25rem;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-warning {
+    border-color: var(--danger);
+}
+
+.stat-warning .stat-value {
+    color: var(--danger);
+}
+
+.bar-col {
+    width: 35%;
+    min-width: 120px;
+    vertical-align: middle;
+}
+
+.bar-track {
+    height: 10px;
+    background: var(--bg);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+}
+
+tr.over td {
+    background: var(--danger-bg);
+}
+
+tr.over .bar {
+    background: var(--danger);
+}
+
+.badge-over {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.budgets {
+    margin-top: 2rem;
+}
+
+.budget-form {
+    margin-top: 0.75rem;
+}
+
+.budget-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 420px;
+}
+
+.budget-list li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.budget-list li > span:first-child {
+    flex: 1;
 }
 
 /* Forms */

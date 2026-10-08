@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Summary · Expense Tracker</title>
+</head>
+<body>
+<main class="container" th:with="month=${summary.month()}">
+    <div class="page-head">
+        <h1 th:text="|Summary for ${#temporals.format(month.atDay(1), 'MMMM yyyy')}|">Summary for October 2026</h1>
+    </div>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Budget saved.</p>
+
+    <form class="filters" method="get" th:action="@{/summary}">
+        <a th:href="@{/summary(month=${month.minusMonths(1)})}">&larr; Previous</a>
+        <div class="field">
+            <label for="month">Month</label>
+            <input type="month" id="month" name="month" th:value="${month}" required>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="button">Show</button>
+            <a th:href="@{/summary(month=${month.plusMonths(1)})}">Next &rarr;</a>
+        </div>
+    </form>
+
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-label">Total spent</span>
+            <span class="stat-value"
+                  th:text="${#numbers.formatDecimal(summary.totalSpent(), 1, 'COMMA', 2, 'POINT')}">1,234.50</span>
+        </div>
+        <div class="stat" th:classappend="${summary.overBudgetCount() > 0} ? 'stat-warning'">
+            <span class="stat-label">Over budget</span>
+            <span class="stat-value"
+                  th:text="${summary.overBudgetCount()} + (${summary.overBudgetCount() == 1} ? ' category' : ' categories')">0 categories</span>
+        </div>
+    </div>
+
+    <p class="empty" th:if="${summary.categories().isEmpty()}">No spending recorded for this month.</p>
+
+    <div class="table-wrap" th:unless="${summary.categories().isEmpty()}">
+        <table class="summary-table">
+            <thead>
+            <tr>
+                <th>Category</th>
+                <th class="num">Spent</th>
+                <th class="bar-col"><span class="sr-only">Share of spending</span></th>
+                <th class="num">Budget</th>
+                <th class="num">Remaining</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${summary.categories()}" th:classappend="${row.overBudget()} ? 'over'">
+                <td>
+                    <span th:text="${row.category().label}">Food</span>
+                    <span class="badge-over" th:if="${row.overBudget()}">Over budget</span>
+                </td>
+                <td class="num" th:text="${#numbers.formatDecimal(row.spent(), 1, 'COMMA', 2, 'POINT')}">120.00</td>
+                <td class="bar-col">
+                    <div class="bar-track"><div class="bar" th:style="|width: ${row.barPercent()}%|"></div></div>
+                </td>
+                <td class="num">
+                    <span th:if="${row.hasBudget()}"
+                          th:text="${#numbers.formatDecimal(row.limit(), 1, 'COMMA', 2, 'POINT')}">100.00</span>
+                    <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>
+                </td>
+                <td class="num">
+                    <span th:if="${row.hasBudget()}"
+                          th:text="${#numbers.formatDecimal(row.remaining(), 1, 'COMMA', 2, 'POINT')}">-20.00</span>
+                    <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <section class="budgets">
+        <h2>Monthly budgets</h2>
+        <p class="muted">Set a limit per category. Saving a category that already has a budget updates it.</p>
+
+        <form class="filters budget-form" method="post" th:action="@{/budgets}" th:object="${budgetForm}">
+            <input type="hidden" name="month" th:value="${month}">
+            <div class="field">
+                <label for="category">Category</label>
+                <select th:field="*{category}" th:errorclass="field-error" required>
+                    <option value="">Choose a category</option>
+                    <option th:each="c : ${categories}" th:value="${c}" th:text="${c.label}">Food</option>
+                </select>
+                <p class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Error</p>
+            </div>
+            <div class="field">
+                <label for="monthlyLimit">Monthly limit</label>
+                <input type="number" th:field="*{monthlyLimit}" th:errorclass="field-error"
+                       step="0.01" min="0.01" inputmode="decimal" required>
+                <p class="error" th:if="${#fields.hasErrors('monthlyLimit')}" th:errors="*{monthlyLimit}">Error</p>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="button">Save budget</button>
+            </div>
+        </form>
+
+        <ul class="budget-list" th:unless="${budgets.isEmpty()}">
+            <li th:each="b : ${budgets}">
+                <span th:text="${b.category.label}">Food</span>
+                <span class="num" th:text="${#numbers.formatDecimal(b.monthlyLimit, 1, 'COMMA', 2, 'POINT')}">3,000.00</span>
+                <form method="post" th:action="@{/budgets/{c}/delete(c=${b.category}, month=${month})}">
+                    <button type="submit" class="link danger">Remove</button>
+                </form>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

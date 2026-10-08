@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
@@ -19,6 +20,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
 class ExpenseRepositoryTest {
@@ -78,6 +80,19 @@ class ExpenseRepositoryTest {
 
         assertThat(page.getContent()).hasSize(2);
         assertThat(page.getTotalPages()).isEqualTo(3);
+    }
+
+    @Test
+    void totalsByCategorySumsOnlyTheGivenMonth() {
+        repository.save(expense("Second October lunch", "7.50", Category.FOOD, "2026-10-20"));
+
+        List<CategoryTotal> totals = repository.totalsByCategory(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31));
+
+        assertThat(totals).extracting(CategoryTotal::category, t -> t.total().stripTrailingZeros().toPlainString())
+                .containsExactlyInAnyOrder(
+                        tuple(Category.FOOD, "20"),
+                        tuple(Category.RENT, "300"),
+                        tuple(Category.TRANSPORT, "2.4"));
     }
 
     private Page<Expense> search(ExpenseFilter filter) {
