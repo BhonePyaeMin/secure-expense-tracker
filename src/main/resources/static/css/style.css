@@ -71,6 +71,18 @@ h1 {
     padding-bottom: 0.75rem;
 }
 
+/* With 7 links plus the user menu, medium widths wrap whole items, never inside a link */
+.header-inner {
+    flex-wrap: wrap;
+}
+
+.brand,
+.site-header nav a,
+.user-menu a,
+.user-menu button {
+    white-space: nowrap;
+}
+
 .brand {
     font-weight: 700;
     color: var(--text);
@@ -79,7 +91,8 @@ h1 {
 
 .site-header nav {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
     margin-right: auto;
     margin-left: 1rem;
 }
@@ -121,7 +134,10 @@ h1 {
 /* Buttons */
 
 .button {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
     padding: 0.5rem 1rem;
     border: 0;
     border-radius: var(--radius);
@@ -560,6 +576,7 @@ label {
 input,
 select,
 textarea {
+    min-height: 44px;
     width: 100%;
     padding: 0.5rem 0.6rem;
     border: 1px solid var(--border);
@@ -720,6 +737,34 @@ code {
 /* Small screens */
 
 @media (max-width: 640px) {
+    /* Tap targets at least 44 x 44 px. Links inside a sentence (p a) are exempt, as in WCAG. */
+    a:not(p a),
+    button,
+    summary {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    label.choice input {
+        min-height: 24px;
+    }
+
+    .site-header nav {
+        gap: 0 1rem;
+    }
+
+    .head-actions {
+        flex-wrap: wrap;
+        gap: 0 1rem;
+    }
+
+    .head-actions a,
+    .button {
+        white-space: nowrap;
+    }
+
     .container {
         padding: 1rem 0.75rem;
     }
