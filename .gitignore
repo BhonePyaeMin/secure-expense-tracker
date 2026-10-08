@@ -14,7 +14,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -37,3 +37,10 @@ data/
 
 ### Local tooling (machine-specific paths) ###
 .claude/launch.json
+
+### Logs (written to ./logs) ###
+logs/
+*.log
+
+### Local secrets ###
+.env
