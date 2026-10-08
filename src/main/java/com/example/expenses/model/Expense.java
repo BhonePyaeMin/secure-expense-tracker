@@ -40,6 +40,14 @@ public class Expense {
     public Expense() {
     }
 
+    public Expense(String title, BigDecimal amount, Category category, LocalDate date, String note) {
+        this.title = title;
+        this.amount = amount;
+        this.category = category;
+        this.date = date;
+        this.note = note;
+    }
+
     public Long getId() {
         return id;
     }

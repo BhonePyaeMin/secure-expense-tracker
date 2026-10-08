@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Expense not found · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow">
+    <div class="notice">
+        <h1>Expense not found</h1>
+        <p>This expense doesn't exist. It may have been deleted, or the link is wrong.</p>
+        <a class="button" th:href="@{/expenses}">Back to expenses</a>
+    </div>
+</main>
+</body>
+</html>

@@ -1,12 +1,15 @@
 package com.example.expenses.service;
 
+import com.example.expenses.dto.ExpenseFilter;
+import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Expense;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.ExpenseSpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -18,8 +21,8 @@ public class ExpenseService {
         this.expenseRepository = expenseRepository;
     }
 
-    public List<Expense> findAll() {
-        return expenseRepository.findAllByOrderByDateDescIdDesc();
+    public Page<Expense> search(ExpenseFilter filter, Pageable pageable) {
+        return expenseRepository.findAll(ExpenseSpecifications.matching(filter), pageable);
     }
 
     public Expense findById(Long id) {
@@ -27,17 +30,21 @@ public class ExpenseService {
                 .orElseThrow(() -> new ExpenseNotFoundException(id));
     }
 
-    @Transactional
-    public Expense create(Expense expense) {
-        Expense created = new Expense();
-        copyFields(expense, created);
-        return expenseRepository.save(created);
+    public ExpenseForm formFor(Long id) {
+        return ExpenseForm.from(findById(id));
     }
 
     @Transactional
-    public Expense update(Long id, Expense changes) {
+    public Expense create(ExpenseForm form) {
+        Expense expense = new Expense();
+        copyFields(form, expense);
+        return expenseRepository.save(expense);
+    }
+
+    @Transactional
+    public Expense update(Long id, ExpenseForm form) {
         Expense existing = findById(id);
-        copyFields(changes, existing);
+        copyFields(form, existing);
         return existing; // saved on commit by JPA dirty checking
     }
 
@@ -46,8 +53,8 @@ public class ExpenseService {
         expenseRepository.delete(findById(id));
     }
 
-    private static void copyFields(Expense source, Expense target) {
-        target.setTitle(source.getTitle() == null ? null : source.getTitle().trim());
+    private static void copyFields(ExpenseForm source, Expense target) {
+        target.setTitle(source.getTitle().trim());
         target.setAmount(source.getAmount());
         target.setCategory(source.getCategory());
         target.setDate(source.getDate());

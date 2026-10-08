@@ -13,39 +13,72 @@
 
     <p class="flash" th:if="${message}" th:text="${message}">Expense added.</p>
 
-    <p class="empty" th:if="${#lists.isEmpty(expenses)}">
-        No expenses yet. <a th:href="@{/expenses/new}">Add your first one</a>.
+    <form class="filters" method="get" th:action="@{/expenses}">
+        <div class="field">
+            <label for="month">Month</label>
+            <input type="month" id="month" name="month" th:value="${filter.month()}">
+        </div>
+        <div class="field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">All categories</option>
+                <option th:each="c : ${categories}" th:value="${c}" th:text="${c.label}"
+                        th:selected="${c == filter.category()}">Food</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="button">Filter</button>
+            <a th:unless="${filter.isEmpty()}" th:href="@{/expenses}">Clear</a>
+        </div>
+    </form>
+
+    <p class="empty" th:unless="${expenses.hasContent()}">
+        <span th:if="${filter.isEmpty()}">No expenses yet. <a th:href="@{/expenses/new}">Add your first one</a>.</span>
+        <span th:unless="${filter.isEmpty()}">No expenses match this filter.</span>
     </p>
 
-    <div class="table-wrap" th:unless="${#lists.isEmpty(expenses)}">
-        <table>
-            <thead>
-            <tr>
-                <th>Date</th>
-                <th>Title</th>
-                <th>Category</th>
-                <th class="num">Amount</th>
-                <th>Note</th>
-                <th><span class="sr-only">Actions</span></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="e : ${expenses}">
-                <td class="nowrap" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
-                <td th:text="${e.title}">Lunch</td>
-                <td><span class="tag" th:text="${e.category.label}">Food</span></td>
-                <td class="num" th:text="${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">12.50</td>
-                <td class="muted" th:text="${e.note}">With friends</td>
-                <td class="actions">
-                    <a th:href="@{/expenses/{id}/edit(id=${e.id})}">Edit</a>
-                    <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post">
-                        <button type="submit" class="link danger">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+    <th:block th:if="${expenses.hasContent()}">
+        <p class="muted result-count"
+           th:text="${expenses.totalElements} + (${expenses.totalElements == 1} ? ' expense' : ' expenses')">12 expenses</p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="num">Amount</th>
+                    <th>Note</th>
+                    <th><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${expenses}">
+                    <td class="nowrap" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
+                    <td th:text="${e.title}">Lunch</td>
+                    <td><span class="tag" th:text="${e.category.label}">Food</span></td>
+                    <td class="num" th:text="${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">12.50</td>
+                    <td class="muted" th:text="${e.note}">With friends</td>
+                    <td class="actions">
+                        <a th:href="@{/expenses/{id}/edit(id=${e.id})}">Edit</a>
+                        <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post">
+                            <button type="submit" class="link danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pagination" th:if="${expenses.totalPages > 1}" aria-label="Pages">
+            <a th:if="${expenses.hasPrevious()}"
+               th:href="@{${filter.url('/expenses', expenses.number - 1)}}">&larr; Newer</a>
+            <span th:text="|Page ${expenses.number + 1} of ${expenses.totalPages}|">Page 1 of 3</span>
+            <a th:if="${expenses.hasNext()}"
+               th:href="@{${filter.url('/expenses', expenses.number + 1)}}">Older &rarr;</a>
+        </nav>
+    </th:block>
 </main>
 </body>
 </html>

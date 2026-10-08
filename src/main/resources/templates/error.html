@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Something went wrong · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow">
+    <div class="notice">
+        <p class="muted" th:text="${status}">500</p>
+        <h1 th:text="${status == 404} ? 'Page not found' : (${error} ?: 'Something went wrong')">Something went wrong</h1>
+        <p th:if="${message != null and message != '' and message != 'No message available'}" th:text="${message}">Details</p>
+        <p th:unless="${message != null and message != '' and message != 'No message available'}">
+            Please go back and try again.
+        </p>
+        <a class="button" th:href="@{/expenses}">Back to expenses</a>
+    </div>
+</main>
+</body>
+</html>
