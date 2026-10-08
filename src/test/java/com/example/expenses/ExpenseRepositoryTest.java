@@ -86,10 +86,25 @@ class ExpenseRepositoryTest {
         repository.save(new Expense(owner, "Coffee", new BigDecimal("50"), Category.FOOD, LocalDate.parse("2026-09-01"), null));
         repository.save(new Expense(owner, "COFFEE", new BigDecimal("50"), Category.FUN, LocalDate.parse("2026-10-02"), null));
 
-        assertThat(repository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "coffee"))
+        assertThat(repository.findFirstByOwnerIdAndDeletedAtIsNullAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "coffee"))
                 .get().extracting(Expense::getCategory).isEqualTo(Category.FUN);
-        assertThat(repository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "not mine"))
+        assertThat(repository.findFirstByOwnerIdAndDeletedAtIsNullAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "not mine"))
                 .isEmpty();
+    }
+
+    @Test
+    void trashedExpensesAreLeftOutOfListsTotalsAndHistory() {
+        Expense rent = repository.findAll().stream().filter(e -> e.getTitle().equals("Rent")).findFirst().orElseThrow();
+        rent.moveToTrash(java.time.Instant.now());
+        repository.saveAndFlush(rent);
+
+        assertThat(search(new ExpenseFilter(YearMonth.of(2026, 10), null)).getContent())
+                .extracting(Expense::getTitle).doesNotContain("Rent");
+        assertThat(repository.totalsByCategory(owner.getId(), LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
+                .extracting(CategoryTotal::category).doesNotContain(Category.RENT);
+        assertThat(repository.findFirstByOwnerIdAndDeletedAtIsNullAndTitleIgnoreCaseOrderByDateDescIdDesc(owner.getId(), "rent"))
+                .isEmpty();
+        assertThat(repository.findByIdAndOwnerIdAndDeletedAtIsNotNull(rent.getId(), owner.getId())).isPresent();
     }
 
     @Test

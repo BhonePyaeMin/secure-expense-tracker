@@ -3,6 +3,8 @@ package com.example.expenses.repository;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.model.Expense;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -17,18 +19,29 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     /** Looks up an expense only if it belongs to this user, so other users' ids behave as "not found". */
     Optional<Expense> findByIdAndOwnerId(Long id, Long ownerId);
 
+    /** Like findByIdAndOwnerId, but only if it's not in the trash. */
+    Optional<Expense> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
+
+    /** Only if it is in the trash (for restore and delete forever). */
+    Optional<Expense> findByIdAndOwnerIdAndDeletedAtIsNotNull(Long id, Long ownerId);
+
+    Page<Expense> findByOwnerIdAndDeletedAtIsNotNullOrderByDeletedAtDescIdDesc(Long ownerId, Pageable pageable);
+
+    long countByOwnerIdAndDeletedAtIsNotNull(Long ownerId);
+
     long countByOwnerId(Long ownerId);
 
     boolean existsByRecurringExpenseIdAndDate(Long recurringExpenseId, LocalDate date);
 
     /** The most recent expense with this exact title, ignoring case (for pre-selecting its category). */
-    Optional<Expense> findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(Long ownerId, String title);
+    Optional<Expense> findFirstByOwnerIdAndDeletedAtIsNullAndTitleIgnoreCaseOrderByDateDescIdDesc(Long ownerId,
+                                                                                               String title);
 
     /** One row per category: the database does the summing, so no expense rows are loaded. */
     @Query("""
             select new com.example.expenses.dto.CategoryTotal(e.category, sum(e.amount))
             from Expense e
-            where e.owner.id = :ownerId and e.date between :from and :to
+            where e.owner.id = :ownerId and e.date between :from and :to and e.deletedAt is null
             group by e.category
             """)
     List<CategoryTotal> totalsByCategory(@Param("ownerId") Long ownerId,
@@ -39,7 +52,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     @Query("""
             select new com.example.expenses.dto.DailyTotal(e.date, sum(e.amount))
             from Expense e
-            where e.owner.id = :ownerId and e.date between :from and :to
+            where e.owner.id = :ownerId and e.date between :from and :to and e.deletedAt is null
             group by e.date
             order by e.date
             """)

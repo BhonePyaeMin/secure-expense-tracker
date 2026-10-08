@@ -10,12 +10,14 @@ import com.example.expenses.repository.ExpenseSpecifications;
 import com.example.expenses.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +59,8 @@ public class ExpenseService {
         if (!StringUtils.hasText(title)) {
             return Optional.empty();
         }
-        return expenseRepository.findFirstByOwnerIdAndTitleIgnoreCaseOrderByDateDescIdDesc(userId, title.trim())
+        return expenseRepository.findFirstByOwnerIdAndDeletedAtIsNullAndTitleIgnoreCaseOrderByDateDescIdDesc(
+                        userId, title.trim())
                 .map(Expense::getCategory);
     }
 
@@ -116,17 +119,49 @@ public class ExpenseService {
         return existing;
     }
 
+    /** Moves the expense to the trash. It can be restored until it's deleted forever. */
     @Transactional
     public void delete(Long userId, Long id) {
         Expense expense = findOwned(userId, id);
-        String description = describe(expense);
-        expenseRepository.delete(expense);
-        auditService.record(userId, AuditAction.EXPENSE_DELETED, description);
+        expense.moveToTrash(Instant.now());
+        auditService.record(userId, AuditAction.EXPENSE_DELETED, describe(expense));
     }
 
-    // Another user's expense id behaves exactly like a missing one (404), so ids can't be probed
+    public Page<Expense> trash(Long userId, int page) {
+        return expenseRepository.findByOwnerIdAndDeletedAtIsNotNullOrderByDeletedAtDescIdDesc(
+                userId, PageRequest.of(Math.max(page, 0), 20));
+    }
+
+    public long trashCount(Long userId) {
+        return expenseRepository.countByOwnerIdAndDeletedAtIsNotNull(userId);
+    }
+
+    @Transactional
+    public Expense restore(Long userId, Long id) {
+        Expense expense = findInTrash(userId, id);
+        expense.restore();
+        auditService.record(userId, AuditAction.EXPENSE_RESTORED, describe(expense));
+        return expense;
+    }
+
+    /** Removes an expense for good. Only possible from the trash. */
+    @Transactional
+    public void deleteForever(Long userId, Long id) {
+        Expense expense = findInTrash(userId, id);
+        String description = describe(expense);
+        expenseRepository.delete(expense);
+        auditService.record(userId, AuditAction.EXPENSE_PURGED, description);
+    }
+
+    // Another user's expense id behaves exactly like a missing one (404), so ids can't be probed.
+    // Expenses in the trash count as missing too, so they can't be edited or repeated.
     private Expense findOwned(Long userId, Long id) {
-        return expenseRepository.findByIdAndOwnerId(id, userId)
+        return expenseRepository.findByIdAndOwnerIdAndDeletedAtIsNull(id, userId)
+                .orElseThrow(() -> new ExpenseNotFoundException(id));
+    }
+
+    private Expense findInTrash(Long userId, Long id) {
+        return expenseRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(id, userId)
                 .orElseThrow(() -> new ExpenseNotFoundException(id));
     }
 

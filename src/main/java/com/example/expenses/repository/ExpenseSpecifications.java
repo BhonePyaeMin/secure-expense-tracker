@@ -13,7 +13,7 @@ import java.util.Locale;
 /**
  * Building blocks for the expense list query. Each filter is optional, so the
  * WHERE clause is assembled from only the filters that are set. The owner
- * condition is always added.
+ * and not-in-trash conditions are always added.
  */
 public final class ExpenseSpecifications {
 
@@ -24,6 +24,10 @@ public final class ExpenseSpecifications {
 
     public static Specification<Expense> ownedBy(Long ownerId) {
         return (root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId);
+    }
+
+    public static Specification<Expense> notInTrash() {
+        return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
     }
 
     public static Specification<Expense> inMonth(YearMonth month) {
@@ -49,6 +53,7 @@ public final class ExpenseSpecifications {
     public static Specification<Expense> matching(Long ownerId, ExpenseFilter filter) {
         List<Specification<Expense>> specs = new ArrayList<>();
         specs.add(ownedBy(ownerId));
+        specs.add(notInTrash());
         if (filter.month() != null) {
             specs.add(inMonth(filter.month()));
         }

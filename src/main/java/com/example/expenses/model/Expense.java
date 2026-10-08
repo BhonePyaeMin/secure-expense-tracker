@@ -13,7 +13,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "expenses",
@@ -51,6 +54,10 @@ public class Expense {
     // Set when created by a RecurringExpense; null for everything typed in or imported
     @Column(name = "recurring_expense_id")
     private Long recurringExpenseId;
+
+    // Soft delete: set when moved to the trash, null otherwise. Trashed expenses are left out of every list and total.
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     public Expense() {
     }
@@ -114,6 +121,27 @@ public class Expense {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public void moveToTrash(Instant now) {
+        deletedAt = now;
+    }
+
+    public void restore() {
+        deletedAt = null;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
+    }
+
+    /** When it was moved to the trash, in the server's time zone, for display. */
+    public LocalDateTime getDeletedAtLocal() {
+        return deletedAt == null ? null : LocalDateTime.ofInstant(deletedAt, ZoneId.systemDefault());
     }
 
     public Long getRecurringExpenseId() {

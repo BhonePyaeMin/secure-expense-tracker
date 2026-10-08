@@ -9,13 +9,20 @@
     <div class="page-head">
         <h1>Expenses</h1>
         <div class="head-actions">
+            <a th:href="@{/trash}" th:text="${trashCount > 0} ? |Trash (${trashCount})| : 'Trash'">Trash</a>
             <a th:href="@{/expenses/import}">Import CSV</a>
             <a th:href="@{${filter.url('/expenses/export')}}">Export CSV</a>
             <a class="button" th:href="@{/expenses/new}">Add expense</a>
         </div>
     </div>
 
-    <p class="flash" th:if="${message}" th:text="${message}">Expense added.</p>
+    <div class="flash" th:if="${message}">
+        <span th:text="${message}">Moved to trash.</span>
+        <form th:if="${undoId}" class="inline-form" method="post"
+              th:action="@{/trash/{id}/restore(id=${undoId}, from='list')}">
+            <button type="submit" class="link">Undo</button>
+        </form>
+    </div>
 
     <form class="filters" method="get" th:action="@{/expenses}">
         <div class="field field-search">
@@ -73,8 +80,7 @@
                         <form th:action="@{/expenses/{id}/repeat(id=${e.id})}" method="post">
                             <button type="submit" class="link" th:title="|Add '${e.title}' again, dated today|">Repeat</button>
                         </form>
-                        <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post"
-                              th:data-confirm="|Delete '${e.title}'? This can't be undone.|">
+                        <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post">
                             <button type="submit" class="link danger">Delete</button>
                         </form>
                     </td>

@@ -78,6 +78,7 @@ public class ExpenseController {
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), PAGE_SIZE, NEWEST_FIRST);
         model.addAttribute("filter", filter);
         model.addAttribute("expenses", expenseService.search(user.getId(), filter, pageRequest));
+        model.addAttribute("trashCount", expenseService.trashCount(user.getId()));
         return "expenses/list";
     }
 
@@ -178,7 +179,8 @@ public class ExpenseController {
     public String delete(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id,
                          RedirectAttributes redirectAttributes) {
         expenseService.delete(user.getId(), id);
-        redirectAttributes.addFlashAttribute("message", "Expense deleted.");
+        redirectAttributes.addFlashAttribute("message", "Moved to trash.");
+        redirectAttributes.addFlashAttribute("undoId", id);
         return "redirect:/expenses";
     }
 }

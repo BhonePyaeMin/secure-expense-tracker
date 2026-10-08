@@ -166,6 +166,16 @@ button.link.danger {
     color: var(--danger);
 }
 
+.flash .inline-form {
+    display: inline;
+    margin-left: 0.5rem;
+}
+
+.flash .link {
+    color: inherit;
+    font-weight: 600;
+}
+
 .empty {
     padding: 2rem 1rem;
     text-align: center;

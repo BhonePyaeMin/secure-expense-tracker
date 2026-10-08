@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Trash · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Trash</h1>
+        <a th:href="@{/expenses}">Back to expenses</a>
+    </div>
+    <p class="muted">Deleted expenses stay here, left out of every list and total, until you restore them or
+        delete them forever.</p>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Restored.</p>
+
+    <p class="empty" th:unless="${expenses.hasContent()}">The trash is empty.</p>
+
+    <th:block th:if="${expenses.hasContent()}">
+        <div class="table-wrap">
+            <table class="cards-on-mobile">
+                <thead>
+                <tr>
+                    <th>Deleted</th>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="num">Amount</th>
+                    <th><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${expenses}">
+                    <td class="nowrap muted" data-label="Deleted"
+                        th:text="${#temporals.format(e.deletedAtLocal, 'dd MMM, HH:mm')}">08 Oct, 21:15</td>
+                    <td class="nowrap" data-label="Date" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
+                    <td class="title-cell" data-label="Title" th:text="${e.title}">Lunch</td>
+                    <td data-label="Category"><span class="tag" th:text="${e.category.label}">Food</span></td>
+                    <td class="num" data-label="Amount" th:text="${@money.format(e.amount)}">฿65.00</td>
+                    <td class="actions">
+                        <form method="post" th:action="@{/trash/{id}/restore(id=${e.id})}">
+                            <button type="submit" class="link">Restore</button>
+                        </form>
+                        <form method="post" th:action="@{/trash/{id}/delete(id=${e.id})}"
+                              th:data-confirm="|Delete '${e.title}' forever? This can't be undone.|">
+                            <button type="submit" class="link danger">Delete forever</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pagination" th:if="${expenses.totalPages > 1}" aria-label="Pages">
+            <a th:if="${expenses.hasPrevious()}" th:href="@{/trash(page=${expenses.number - 1})}">&larr; Newer</a>
+            <span th:text="|Page ${expenses.number + 1} of ${expenses.totalPages}|">Page 1 of 2</span>
+            <a th:if="${expenses.hasNext()}" th:href="@{/trash(page=${expenses.number + 1})}">Older &rarr;</a>
+        </nav>
+    </th:block>
+</main>
+</body>
+</html>
