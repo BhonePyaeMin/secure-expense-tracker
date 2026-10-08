@@ -15,13 +15,15 @@
 ## Commands
 - Run: `./mvnw spring-boot:run` (then open http://localhost:8080)
 - Run with sample data: `./mvnw spring-boot:run -Pdemo` (sign in as demo / demo1234; uses `./data/demo`). Don't suggest `-Dspring-boot.run.profiles=...` to the user: PowerShell splits it at the dot.
-- Test: `./mvnw test`
+- Run with the H2 console: `./mvnw spring-boot:run -Pdev` (console at /h2-console after signing in; JDBC URL jdbc:h2:file:./data/expenses, user sa, empty password)
+- Test: `./mvnw test` (every test runs with the `test` profile: in-memory H2, see src/test/resources)
 
 ## Notes
 - start.spring.io now only generates Spring Boot 4.x projects. Stay on 3.5.x unless asked to upgrade.
 - Expenses are soft-deleted (`deleted_at`). Every expense list, total or lookup must leave the trash out: use `ExpenseSpecifications.matching`, `... and e.deletedAt is null` in JPQL, or the `...DeletedAtIsNull` finders. Only Trash and Backup see trashed rows.
 - Every service method takes the signed-in user's id and every query is scoped to it. Keep it that way for new features, and add a case to `SecurityIntegrationTest`.
-- Tests use in-memory H2 (`src/test/resources/config/`). A new profile with its own datasource needs a matching test override there, because profile files beat `config/application.properties`.
+- Profiles: default (./data/expenses), `dev` (+ H2 console), `demo` (sample data in ./data/demo), `test` (in-memory, set in src/test/resources/config/application.properties). A test that activates another profile must list `test` last, e.g. `@ActiveProfiles({"demo", "test"})`, so the in-memory database wins.
+- No secrets in config files: the database password comes from `DB_PASSWORD` (empty by default).
 - Enums are stored with `EnumNameConverter` subclasses, not `@Enumerated`: Hibernate adds a CHECK constraint for `@Enumerated` that `ddl-auto=update` never updates.
 - Lazy initialization is on: `@Scheduled` beans need `@Lazy(false)`.
 - `th:data-*` attributes run in Thymeleaf's restricted mode (no `@bean` references); resolve values with `th:with` first.

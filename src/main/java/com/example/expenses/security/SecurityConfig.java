@@ -1,5 +1,6 @@
 package com.example.expenses.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.LockedException;
@@ -22,7 +23,9 @@ import java.util.Map;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                            @Value("${spring.h2.console.enabled:false}") boolean h2Console)
+            throws Exception {
         // Return to the page you asked for after signing in, without Spring's "?continue" marker in the URL
         HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setMatchingRequestParameterName(null);
@@ -41,6 +44,12 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
                         .permitAll());
+        if (h2Console) {
+            // Only in the "dev" profile. The console still needs a signed-in user (anyRequest above),
+            // but it runs in frames and posts its own forms without CSRF tokens.
+            http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+                    .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+        }
         return http.build();
     }
 

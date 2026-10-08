@@ -70,8 +70,14 @@
     </build>
 
     <profiles>
-        <!-- ./mvnw spring-boot:run -Pdemo runs with sample data. Works in every shell, unlike
+        <!-- ./mvnw spring-boot:run -Pdemo runs with sample data, -Pdev with the H2 console. Works in every shell, unlike
              -Dspring-boot.run.profiles=demo, which PowerShell splits at the first dot. -->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <spring-boot.run.profiles>dev</spring-boot.run.profiles>
+            </properties>
+        </profile>
         <profile>
             <id>demo</id>
             <properties>

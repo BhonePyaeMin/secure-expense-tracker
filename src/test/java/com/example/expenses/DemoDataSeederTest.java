@@ -15,7 +15,8 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("demo")
+// "test" last, so its in-memory database wins over the demo profile's file database
+@ActiveProfiles({"demo", "test"})
 class DemoDataSeederTest {
 
     @Autowired
