@@ -1,20 +1,24 @@
 # Expense Tracker
 
-A lightweight personal expense tracker built with **Java 17 and Spring Boot**. Log what you spend, filter and search, set monthly budgets, and see where your money goes. Each user has their own private data behind a login. It runs in about 230 MB of RAM with no Docker and no database server.
+A lightweight personal expense tracker built with **Java 17 and Spring Boot**. Log what you spend and earn, set monthly budgets, and see where your money goes and how much you can still spend today. Each user has their own private data behind a login. It runs in about 230 MB of RAM with no Docker and no database server.
 
 ## Features
 
 **Expenses**
-- Add, edit, and delete expenses (title, amount, category, date, note), with a confirmation before deleting
+- Add, edit, and delete expenses (title, amount, category, date, payment method, note)
+- Deleted expenses go to a **Trash** first (with Undo), where you can restore them or delete them forever
+- **Repeat** button on each row: adds the same expense again, dated today
 - **Quick add**: type `lunch 85 baht yesterday` and the form fills itself in (rule-based, no AI); you check it and save
-- **Category suggestions** while you type a title (`grab ride` → Transport), from keyword rules in English and Thai
+- **Category pre-selected** while you type a title: the category you used last time for the same title, otherwise keyword rules in English and Thai (`grab ride` → Transport)
 - Filter by month and category, **search** title and note, 10 per page
-- **Recurring expenses** (rent, phone plan, subscriptions) added automatically each month, with catch-up if the app was off
+- **Recurring expenses** (rent, phone plan, subscriptions) added automatically each month, with catch-up if the app was off and a database guarantee against duplicates
 - **CSV export** of the current filter, and **CSV import** (the app's own format or a bank export), validated before anything is saved
 
 **Insight**
-- Monthly summary: total spent, per-category totals with bars, and a **spending-by-day chart** (Chart.js from a CDN)
+- **Income** and a monthly **balance** (income minus expenses)
+- Monthly summary: per-category totals with bars, a **spending-by-day chart** (Chart.js from a CDN), and totals **per payment method** (Cash, Bank transfer, PromptPay, E-wallet, Card)
 - Monthly budget per category, with over-budget rows highlighted
+- **Daily allowance**: what's left of your budgets divided by the days left in the month, red when you're over
 
 **Security**
 - Sign up and sign in (Spring Security, BCrypt); every query is scoped to the signed-in user
@@ -25,6 +29,7 @@ A lightweight personal expense tracker built with **Java 17 and Spring Boot**. L
 - Amounts shown as ฿1,234.50; currency set in `application.properties`
 - Works on phones (rows turn into cards) and follows the system dark mode
 - Persistent data in a local file database (survives restarts)
+- **Backup** button: downloads all your own data as CSV files in a ZIP
 
 ## Tech Stack
 
@@ -35,7 +40,7 @@ A lightweight personal expense tracker built with **Java 17 and Spring Boot**. L
 | Database | H2 in file mode | No server to run, tiny footprint |
 | Charts | Chart.js 4 from cdnjs, pinned with an SRI hash | No server memory, no build step |
 | Build | Maven (wrapper included) | No global install needed |
-| Tests | JUnit 5, MockMvc, DataJpaTest, Spring Security Test | 119 tests |
+| Tests | JUnit 5, MockMvc, DataJpaTest, Spring Security Test | 154 tests |
 | CI | GitHub Actions | Runs `./mvnw test` on every push |
 
 Deliberately left out to keep memory low: Actuator, Docker, a front-end framework, and any CSV, chart, or AI library on the server. The only dependencies beyond the Spring Boot starters are H2 and `spring-security-test`.
@@ -57,9 +62,9 @@ expense-tracker/
     │   │   │   ├── DemoDataSeeder.java             sample data for the "demo" profile
     │   │   │   └── WebConfig.java
     │   │   ├── model/
-    │   │   │   ├── Expense.java, Budget.java, RecurringExpense.java
+    │   │   │   ├── Expense.java, Budget.java, RecurringExpense.java, Income.java
     │   │   │   ├── User.java, AuditEntry.java
-    │   │   │   ├── Category.java, AuditAction.java  (enums)
+    │   │   │   ├── Category.java, PaymentMethod.java, AuditAction.java  (enums)
     │   │   │   └── EnumNameConverter.java (+ CategoryConverter, AuditActionConverter)
     │   │   ├── repository/
     │   │   │   ├── ExpenseRepository.java          grouped JPQL for totals
@@ -70,29 +75,33 @@ expense-tracker/
     │   │   │   ├── AppUserDetails.java, AppUserDetailsService.java
     │   │   │   └── LoginAttemptListener.java, LoginAttemptService.java   (lockout)
     │   │   ├── service/
-    │   │   │   ├── ExpenseService, BudgetService, SummaryService, UserService, AuditService
+    │   │   │   ├── ExpenseService, IncomeService, BudgetService, SummaryService, UserService, AuditService
+    │   │   │   ├── BackupService.java              per-user ZIP of CSV files
     │   │   │   ├── RecurringExpenseService.java, RecurringExpenseScheduler.java
     │   │   │   ├── CsvExportService.java, CsvImportService.java, Csv.java
     │   │   │   ├── CategorySuggester.java, QuickEntryParser.java
     │   │   │   └── ExpenseNotFoundException, RecurringExpenseNotFoundException, UsernameTakenException
     │   │   ├── web/
-    │   │   │   ├── ExpenseController, SummaryController, RecurringController, ImportController
+    │   │   │   ├── ExpenseController, TrashController, IncomeController, SummaryController
+    │   │   │   ├── RecurringController, ImportController, BackupController
     │   │   │   ├── AuthController, ActivityController
     │   │   │   ├── GlobalExceptionHandler.java
     │   │   │   └── MoneyFormatter.java ("@money" in templates), CurrentUserInterceptor.java
     │   │   └── dto/
-    │   │       ├── ExpenseForm, BudgetForm, RecurringForm, RegistrationForm
-    │   │       └── ExpenseFilter, CategoryTotal, CategorySummary, MonthlySummary, DailyTotal, DailySpending
+    │   │       ├── ExpenseForm, IncomeForm, BudgetForm, RecurringForm, RegistrationForm
+    │   │       ├── ExpenseFilter, CategoryTotal, CategorySummary, MonthlySummary, MonthlyBalance
+    │   │       └── DailyTotal, DailySpending, DailyAllowance, PaymentMethodTotal
     │   └── resources/
     │       ├── application.properties, application-demo.properties, messages.properties
     │       ├── static/css/style.css
     │       ├── static/js/app.js, static/js/summary-chart.js
     │       └── templates/
-    │           ├── layout.html, error.html, summary.html, recurring.html, activity.html
+    │           ├── layout.html, error.html, summary.html, income.html, recurring.html
+    │           ├── trash.html, activity.html
     │           ├── auth/login.html, auth/register.html
     │           └── expenses/list.html, form.html, import.html, not-found.html
     └── test/
-        ├── java/com/example/expenses/   (14 test classes, see Testing)
+        ├── java/com/example/expenses/   (16 test classes, see Testing)
         └── resources/config/            in-memory database for tests
 ```
 
@@ -109,10 +118,15 @@ expense-tracker/
 | category | Category (enum) | required: FOOD, TRANSPORT, RENT, STUDY, HEALTH, FUN, OTHER |
 | date | LocalDate | required, not in the future |
 | note | String | optional, max 255 chars |
+| paymentMethod | PaymentMethod (enum) | optional: CASH, BANK, PROMPTPAY, EWALLET, CARD; new expenses default to Cash, older ones show "Not set" |
+| deletedAt | Instant | set while the expense is in the trash; trashed expenses are left out of every list and total |
+| recurringExpenseId | Long | set when created by a recurring expense; unique together with the date, so an occurrence can't be created twice |
 
 **Budget**: `owner`, `category` (unique per user), `monthlyLimit` (BigDecimal)
 
-**RecurringExpense**: `owner`, `title`, `amount`, `category`, `note`, `dayOfMonth`, `nextDueDate`, `active`
+**Income**: `owner`, `amount`, `source`, `date`
+
+**RecurringExpense**: `owner`, `title`, `amount`, `category`, `note`, `paymentMethod`, `dayOfMonth`, `nextDueDate`, `active`
 
 **User**: `username` (unique, case-insensitive), `passwordHash` (BCrypt), `failedAttempts`, `lockedUntil`, `createdAt`
 
@@ -132,15 +146,21 @@ Everything except `/login` and `/register` requires signing in.
 | POST | `/expenses` | Create |
 | GET | `/expenses/{id}/edit` | Edit form |
 | POST | `/expenses/{id}` | Update |
-| POST | `/expenses/{id}/delete` | Delete |
+| POST | `/expenses/{id}/delete` | Move to trash |
+| POST | `/expenses/{id}/repeat` | Add a copy dated today |
+| GET | `/trash` | Trash |
+| POST | `/trash/{id}/restore`, `/trash/{id}/delete` | Restore, or delete forever |
 | GET | `/expenses/export?month=2026-10` | Download CSV (also takes `category` and `q`) |
 | GET, POST | `/expenses/import` | Import form, upload CSV |
 | GET | `/expenses/suggest-category?title=grab+ride` | JSON category guess (used while typing) |
-| GET | `/summary?month=2026-10` | Monthly totals, chart, and budget status |
+| GET | `/summary?month=2026-10` | Balance, daily allowance, totals by category and payment method, chart, budgets |
+| GET, POST | `/income?month=2026-10` | List and add income |
+| POST | `/income/{id}/delete` | Delete income |
 | POST | `/budgets`, `/budgets/{category}/delete` | Set or remove a budget |
 | GET, POST | `/recurring` | List and add recurring expenses |
 | POST | `/recurring/{id}/pause`, `/resume`, `/delete` | Manage a recurring expense |
 | GET | `/activity` | Your activity log |
+| GET | `/backup` | Download your data as a ZIP of CSV files |
 | GET, POST | `/login`, `/register` | Sign in, create an account |
 | POST | `/logout` | Sign out |
 
@@ -153,6 +173,17 @@ Requirements: JDK 17+ (Maven is not needed, the wrapper is included). The comman
 ```
 
 Open http://localhost:8080 and create an account. Data is stored in `./data/expenses.mv.db`.
+
+### Backups
+
+- **Your own data**: the **Backup** link next to Sign out downloads a ZIP with `expenses.csv` (trash included, marked in the `deleted_at` column), `income.csv`, `budgets.csv` and `recurring.csv`. `expenses.csv` can be imported again on the Import page.
+- **The whole database** (every account), for whoever runs the app: stop the app and copy `data/expenses.mv.db`. Or write it out as a SQL script with H2's own tool (Maven has already downloaded it):
+
+```bash
+java -cp ~/.m2/repository/com/h2database/h2/2.3.232/h2-2.3.232.jar org.h2.tools.Script -url jdbc:h2:file:./data/expenses -user sa -script backup.sql
+```
+
+The web app deliberately has no whole-database download: it would hand any signed-in user everyone's data and password hashes.
 
 ### Try it with sample data
 
@@ -211,10 +242,12 @@ Tests use a fresh in-memory database per test context, so they never touch `./da
 |---|---|
 | `ExpenseRepositoryTest` | Month, category and search filters, wildcard escaping, pagination, grouped totals, owner scoping |
 | `ExpenseControllerTest` | Validation errors keep input, not-found page, bad parameters, pagination links, CSV download, quick add, suggestions |
-| `SummaryServiceTest` | Summary math: no expenses, exactly at the limit, over the limit, sorting, bar widths, daily totals |
+| `SummaryServiceTest` | Summary math (no expenses, exactly at the limit, over the limit), balance, payment-method shares, and the daily allowance (mid-month, last day, overspend, rounding, future and past months) |
 | `SummaryControllerTest` | Summary page, over-budget highlight, chart data and table view, budget form |
+| `TrashTest` | Delete moves to trash and hides it everywhere; restore and Undo bring it back; delete forever; other users can't touch your trash |
+| `BackupTest` | The ZIP has your four CSV files, includes the trash, and has no other user's data or password hashes |
 | `SecurityIntegrationTest` | User A cannot list, open, edit, delete or export user B's expenses; CSRF; login; lockout; registration; audit log; import; recurring |
-| `RecurringExpenseServiceTest` | Due dates, day 31 in short months, catch-up, running twice, pause/resume, per-user isolation |
+| `RecurringExpenseServiceTest` | Due dates, day 31 in short months, catch-up, running twice, a restart with stale state, the unique constraint, pause/resume, per-user isolation |
 | `CsvExportServiceTest`, `CsvImportServiceTest` | Quoting, CSV injection, parsing, row errors, export then import round trip |
 | `QuickEntryParserTest`, `CategorySuggesterTest` | "lunch 85 baht yesterday", dates, weekdays, Thai words, keyword rules |
 | `UserLockoutTest`, `MoneyFormatterTest`, `DemoDataSeederTest`, `ExpenseTrackerApplicationTests` | Lockout math, ฿ formatting, demo seed, context starts |
@@ -234,6 +267,7 @@ The threats considered, and how the project handles each:
 | **Session fixation** | Spring Security issues a new session id at sign-in. |
 | **Mass assignment** | Forms bind to DTOs (`ExpenseForm` etc.), never to entities. Ids and owners come from the URL and the session. |
 | **CSV injection** | Exported cells that start with `=`, `+`, `-` or `@` get a `'` prefix so spreadsheets don't run them as formulas; import removes it again. |
+| **Backups** | The Backup download only contains the signed-in user's rows, never password hashes or other users' data (tested). |
 | **Uploads** | CSV import is limited to 1 MB and 2,000 rows, is read as text only, and saves nothing unless every row is valid. |
 | **Third-party code** | Chart.js is pinned to one version with a Subresource Integrity hash, so a tampered file is refused. Only two dependencies beyond the Spring Boot starters. |
 | **Accountability** | The activity log records sign-ins, failed sign-ins, lockouts, and every create/edit/delete with before and after values. |
@@ -257,10 +291,10 @@ Known gaps, as next steps:
 | 4 | CSV export, tests, styling, demo data | Done |
 | 5 | Login with Spring Security, per-user expenses | Done |
 | Extras | Currency formatting, search, recurring expenses, auto-categorize, Chart.js chart, account lockout, audit log, CSV import, quick add, dark mode, CI | Done |
+| Usability | Income and balance, daily allowance, category from history, Repeat, duplicate-safe recurring, trash, payment methods, backup | Done |
 
 ## Roadmap Ideas
 
-- Income tracking and a monthly balance
 - Tags, receipt photos (stored on disk), splitting expenses with friends
 - Insights: month-over-month comparison, end-of-month projection, top 5 expenses, spending by weekday, anomaly alerts
 - Savings goals

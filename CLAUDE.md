@@ -10,6 +10,7 @@
 - Use constructor injection.
 - Keep layers separate: controller -> service -> repository.
 - After every change, make sure the app compiles and tests pass.
+- Tell the user before changing an existing table in a way that needs a data migration (e.g. a NOT NULL column or a backfill). Prefer nullable columns whose NULL keeps the old meaning.
 
 ## Commands
 - Run: `./mvnw spring-boot:run` (then open http://localhost:8080)
@@ -18,6 +19,7 @@
 
 ## Notes
 - start.spring.io now only generates Spring Boot 4.x projects. Stay on 3.5.x unless asked to upgrade.
+- Expenses are soft-deleted (`deleted_at`). Every expense list, total or lookup must leave the trash out: use `ExpenseSpecifications.matching`, `... and e.deletedAt is null` in JPQL, or the `...DeletedAtIsNull` finders. Only Trash and Backup see trashed rows.
 - Every service method takes the signed-in user's id and every query is scoped to it. Keep it that way for new features, and add a case to `SecurityIntegrationTest`.
 - Tests use in-memory H2 (`src/test/resources/config/`). A new profile with its own datasource needs a matching test override there, because profile files beat `config/application.properties`.
 - Enums are stored with `EnumNameConverter` subclasses, not `@Enumerated`: Hibernate adds a CHECK constraint for `@Enumerated` that `ddl-auto=update` never updates.

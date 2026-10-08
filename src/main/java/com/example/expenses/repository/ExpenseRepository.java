@@ -32,6 +32,9 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
 
     long countByOwnerId(Long ownerId);
 
+    /** Everything, including the trash (for backups). */
+    List<Expense> findAllByOwnerIdOrderByDateAscIdAsc(Long ownerId);
+
     boolean existsByRecurringExpenseIdAndDate(Long recurringExpenseId, LocalDate date);
 
     /** The most recent expense with this exact title, ignoring case (for pre-selecting its category). */

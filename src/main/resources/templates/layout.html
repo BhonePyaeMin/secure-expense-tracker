@@ -21,6 +21,7 @@
         </nav>
         <div class="user-menu" th:if="${currentUsername != null}">
             <span class="muted" th:text="${currentUsername}">alice</span>
+            <a th:href="@{/backup}" title="Download all your data as CSV files in a ZIP">Backup</a>
             <form method="post" th:action="@{/logout}">
                 <button type="submit" class="link">Sign out</button>
             </form>
