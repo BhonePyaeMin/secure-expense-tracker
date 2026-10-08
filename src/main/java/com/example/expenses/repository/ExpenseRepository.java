@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +52,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     List<CategoryTotal> totalsByCategory(@Param("ownerId") Long ownerId,
                                          @Param("from") LocalDate from,
                                          @Param("to") LocalDate to);
+
+    /** Total spent in the date range (null when nothing), leaving out the trash. */
+    @Query("""
+            select sum(e.amount) from Expense e
+            where e.owner.id = :ownerId and e.date between :from and :to and e.deletedAt is null
+            """)
+    BigDecimal totalBetween(@Param("ownerId") Long ownerId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** The part of totalBetween that recurring expenses added (rent, subscriptions). */
+    @Query("""
+            select sum(e.amount) from Expense e
+            where e.owner.id = :ownerId and e.date between :from and :to and e.deletedAt is null
+              and e.recurringExpenseId is not null
+            """)
+    BigDecimal recurringTotalBetween(@Param("ownerId") Long ownerId, @Param("from") LocalDate from,
+                                     @Param("to") LocalDate to);
 
     /** One row per payment method used (null = not set), biggest first. */
     @Query("""

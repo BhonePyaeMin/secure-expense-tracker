@@ -40,6 +40,17 @@
             <span class="stat-label">Balance (income minus spent)</span>
             <span class="stat-value" th:text="${@money.format(balance.balance())}">฿12,753.50</span>
         </div>
+        <div class="stat" th:if="${pace != null}">
+            <span class="stat-label">Daily average</span>
+            <span class="stat-value" th:text="|${@money.format(pace.dailyAverage())} / day|">฿155.81 / day</span>
+            <span class="stat-note muted"
+                  th:text="|over ${pace.daysCounted()} ${pace.daysCounted() == 1 ? 'day' : 'days'}|">over 8 days</span>
+        </div>
+        <div class="stat" th:if="${pace != null and !pace.finished()}">
+            <span class="stat-label" th:text="|Projected by ${#temporals.format(month.atEndOfMonth(), 'd MMM')}|">Projected by 31 Oct</span>
+            <span class="stat-value" th:text="${@money.format(pace.projection())}">฿4,830.00</span>
+            <a class="stat-note" th:href="@{/insights(month=${month})}">How it's worked out</a>
+        </div>
         <div class="stat" th:if="${allowance != null}" th:classappend="${allowance.isNegative()} ? 'stat-warning'">
             <span class="stat-label">Daily allowance</span>
             <span class="stat-value" th:text="|${@money.format(allowance.perDay())} / day|">฿250.00 / day</span>

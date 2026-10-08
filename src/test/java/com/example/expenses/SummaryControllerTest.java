@@ -10,6 +10,7 @@ import com.example.expenses.model.Category;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.security.SecurityConfig;
 import com.example.expenses.service.BudgetService;
+import com.example.expenses.service.InsightsService;
 import com.example.expenses.service.SummaryService;
 import com.example.expenses.web.MoneyFormatter;
 import com.example.expenses.web.SummaryController;
@@ -57,6 +58,9 @@ class SummaryControllerTest {
 
     @MockitoBean
     private BudgetService budgetService;
+
+    @MockitoBean
+    private InsightsService insightsService;
 
     @BeforeEach
     void noDailySpendingByDefault() {

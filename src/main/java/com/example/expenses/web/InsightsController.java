@@ -27,6 +27,7 @@ public class InsightsController {
         YearMonth selected = month != null ? month : YearMonth.from(today);
         model.addAttribute("month", selected);
         model.addAttribute("comparison", insightsService.compareWithPreviousMonth(user.getId(), selected, today));
+        model.addAttribute("pace", insightsService.pace(user.getId(), selected, today).orElse(null));
         return "insights";
     }
 }

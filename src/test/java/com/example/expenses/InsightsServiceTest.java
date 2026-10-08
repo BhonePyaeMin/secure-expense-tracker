@@ -4,8 +4,10 @@ import com.example.expenses.dto.CategoryComparison;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.Change;
 import com.example.expenses.dto.MonthComparison;
+import com.example.expenses.dto.SpendingPace;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.RecurringExpenseRepository;
 import com.example.expenses.service.InsightsService;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +27,9 @@ class InsightsServiceTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 8);
 
     private final ExpenseRepository expenseRepository = mock(ExpenseRepository.class);
-    private final InsightsService insightsService = new InsightsService(expenseRepository);
+    private final RecurringExpenseRepository recurringRepository = mock(RecurringExpenseRepository.class);
+    private final InsightsService insightsService = new InsightsService(expenseRepository, recurringRepository);
+    private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
 
     // --- Month-over-month comparison ---
 
@@ -97,6 +101,90 @@ class InsightsServiceTest {
         assertThat(change.isUp()).isTrue();
         assertThat(new Change(new BigDecimal("200"), new BigDecimal("300")).percentText()).isEqualTo("-33.3%");
         assertThat(new Change(new BigDecimal("50"), BigDecimal.ZERO).isNew()).isTrue();
+    }
+
+    // --- Daily average and end-of-month projection ---
+
+    @Test
+    void projectionContinuesTheDailyPaceToTheEndOfTheMonth() {
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 10),
+                money("1000"), money("0"), money("0"));
+
+        assertThat(pace.daysCounted()).isEqualTo(10);
+        assertThat(pace.daysLeft()).isEqualTo(21);
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("100.00");
+        assertThat(pace.projection()).isEqualByComparingTo("3100.00"); // 1000 + 100 x 21
+    }
+
+    @Test
+    void recurringExpensesAreNotRepeatedEveryDay() {
+        // 4,500 rent (added by a recurring expense) + 1,000 day-to-day spending over 10 days
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 10),
+                money("5500"), money("4500"), money("0"));
+
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("550.00");
+        assertThat(pace.dayToDayAverage()).isEqualByComparingTo("100.00");
+        assertThat(pace.projection()).isEqualByComparingTo("7600.00"); // not 550 x 31 = 17,050
+    }
+
+    @Test
+    void recurringExpensesStillDueAreAdded() {
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 10),
+                money("5500"), money("4500"), money("419"));
+
+        assertThat(pace.projection()).isEqualByComparingTo("8019.00");
+    }
+
+    @Test
+    void onTheFirstDayOneDayCounts() {
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 1), money("90"), money("0"), money("0"));
+
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("90.00");
+        assertThat(pace.projection()).isEqualByComparingTo("2790.00");
+    }
+
+    @Test
+    void onTheLastDayTheProjectionIsWhatWasSpent() {
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 31), money("3100"), money("0"), money("0"));
+
+        assertThat(pace.daysLeft()).isZero();
+        assertThat(pace.projection()).isEqualByComparingTo("3100.00");
+    }
+
+    @Test
+    void projectionIsRoundedToTheCent() {
+        SpendingPace pace = SpendingPace.calculate(OCTOBER, LocalDate.of(2026, 10, 3), money("100"), money("0"), money("0"));
+
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("33.33");
+        assertThat(pace.projection()).isEqualByComparingTo("1033.33"); // 100 + 100 x 28 / 3
+    }
+
+    @Test
+    void aFinishedMonthAveragesOverAllItsDaysAndTheTotalIsFinal() {
+        SpendingPace pace = SpendingPace.calculate(YearMonth.of(2026, 9), LocalDate.of(2026, 10, 8),
+                money("3000"), money("0"), money("999"));
+
+        assertThat(pace.finished()).isTrue();
+        assertThat(pace.daysCounted()).isEqualTo(30);
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("100.00");
+        assertThat(pace.projection()).isEqualByComparingTo("3000.00");
+        assertThat(pace.upcomingRecurring()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void paceUsesSpendingUpToTodayAndRecurringStillDueThisMonth() {
+        when(expenseRepository.totalBetween(USER_ID, LocalDate.of(2026, 10, 1), TODAY)).thenReturn(new BigDecimal("800"));
+        when(recurringRepository.upcomingTotal(USER_ID, TODAY, LocalDate.of(2026, 10, 31))).thenReturn(new BigDecimal("419"));
+
+        SpendingPace pace = insightsService.pace(USER_ID, OCTOBER, TODAY).orElseThrow();
+
+        assertThat(pace.dailyAverage()).isEqualByComparingTo("100.00");          // 800 over 8 days
+        assertThat(pace.projection()).isEqualByComparingTo("3519.00");           // 800 + 100 x 23 + 419
+        assertThat(insightsService.pace(USER_ID, YearMonth.of(2026, 11), TODAY)).isEmpty();
+    }
+
+    private static BigDecimal money(String amount) {
+        return new BigDecimal(amount);
     }
 
     private void givenTotals(String from, String to, CategoryTotal... totals) {

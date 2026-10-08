@@ -23,6 +23,34 @@
         </div>
     </form>
 
+    <!-- Daily average and end-of-month projection -->
+    <section class="insight">
+        <h2>Daily average and projection</h2>
+        <p class="muted" th:if="${pace == null}">This month hasn't started yet.</p>
+        <th:block th:if="${pace != null}">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label" th:text="${pace.finished()} ? 'Spent' : 'Spent so far'">Spent so far</span>
+                    <span class="stat-value" th:text="${@money.format(pace.spent())}">฿1,246.50</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Daily average</span>
+                    <span class="stat-value" th:text="|${@money.format(pace.dailyAverage())} / day|">฿155.81 / day</span>
+                    <span class="stat-note muted"
+                          th:text="|over ${pace.daysCounted()} ${pace.daysCounted() == 1 ? 'day' : 'days'}|">over 8 days</span>
+                </div>
+                <div class="stat" th:unless="${pace.finished()}">
+                    <span class="stat-label" th:text="|Projected by ${#temporals.format(month.atEndOfMonth(), 'd MMM')}|">Projected by 31 Oct</span>
+                    <span class="stat-value" th:text="${@money.format(pace.projection())}">฿4,830.00</span>
+                </div>
+            </div>
+            <p class="muted" th:unless="${pace.finished()}"
+               th:text="|How the projection is worked out: ${@money.format(pace.spent())} spent so far, plus your day-to-day pace of ${@money.format(pace.dayToDayAverage())} a day for the ${pace.daysLeft()} days left, plus ${@money.format(pace.upcomingRecurring())} of recurring expenses still due this month. Recurring expenses already added (${@money.format(pace.fixedSpent())}) aren't counted in the pace, because they happen once a month, not every day.|">
+                How the projection is worked out.</p>
+            <p class="muted" th:if="${pace.finished()}">This month is over, so the total above is final.</p>
+        </th:block>
+    </section>
+
     <!-- Month-over-month comparison -->
     <section class="insight"
              th:with="c=${comparison},

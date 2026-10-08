@@ -4,8 +4,10 @@ import com.example.expenses.dto.CategoryComparison;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.Change;
 import com.example.expenses.dto.MonthComparison;
+import com.example.expenses.dto.SpendingPace;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.RecurringExpenseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** The numbers on the Insights page. All totals leave out the trash and are scoped to one user. */
@@ -26,9 +29,28 @@ import java.util.Set;
 public class InsightsService {
 
     private final ExpenseRepository expenseRepository;
+    private final RecurringExpenseRepository recurringRepository;
 
-    public InsightsService(ExpenseRepository expenseRepository) {
+    public InsightsService(ExpenseRepository expenseRepository, RecurringExpenseRepository recurringRepository) {
         this.expenseRepository = expenseRepository;
+        this.recurringRepository = recurringRepository;
+    }
+
+    /** Daily average and end-of-month projection; empty for a month that hasn't started. */
+    public Optional<SpendingPace> pace(Long userId, YearMonth month, LocalDate today) {
+        YearMonth current = YearMonth.from(today);
+        if (month.isAfter(current)) {
+            return Optional.empty();
+        }
+        boolean ongoing = month.equals(current);
+        LocalDate from = month.atDay(1);
+        LocalDate to = ongoing ? today : month.atEndOfMonth();
+        BigDecimal spent = orZero(expenseRepository.totalBetween(userId, from, to));
+        BigDecimal fixed = orZero(expenseRepository.recurringTotalBetween(userId, from, to));
+        BigDecimal upcoming = ongoing
+                ? orZero(recurringRepository.upcomingTotal(userId, today, month.atEndOfMonth()))
+                : BigDecimal.ZERO;
+        return Optional.of(SpendingPace.calculate(month, today, spent, fixed, upcoming));
     }
 
     /**
@@ -76,6 +98,10 @@ public class InsightsService {
 
     private static BigDecimal sum(Map<Category, BigDecimal> amounts) {
         return money(amounts.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+
+    private static BigDecimal orZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
     }
 
     static BigDecimal money(BigDecimal value) {

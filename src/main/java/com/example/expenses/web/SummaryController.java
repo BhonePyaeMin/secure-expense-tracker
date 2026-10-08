@@ -5,6 +5,7 @@ import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Category;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.BudgetService;
+import com.example.expenses.service.InsightsService;
 import com.example.expenses.service.SummaryService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,10 +29,13 @@ public class SummaryController {
 
     private final SummaryService summaryService;
     private final BudgetService budgetService;
+    private final InsightsService insightsService;
 
-    public SummaryController(SummaryService summaryService, BudgetService budgetService) {
+    public SummaryController(SummaryService summaryService, BudgetService budgetService,
+                             InsightsService insightsService) {
         this.summaryService = summaryService;
         this.budgetService = budgetService;
+        this.insightsService = insightsService;
     }
 
     @ModelAttribute("categories")
@@ -76,6 +80,7 @@ public class SummaryController {
         model.addAttribute("summary", summary);
         model.addAttribute("balance", summaryService.balance(userId, summary));
         model.addAttribute("allowance", summaryService.dailyAllowance(summary, LocalDate.now()).orElse(null));
+        model.addAttribute("pace", insightsService.pace(userId, selected, LocalDate.now()).orElse(null));
         model.addAttribute("daily", summaryService.dailySpending(userId, selected));
         model.addAttribute("payments", summaryService.paymentTotals(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));
