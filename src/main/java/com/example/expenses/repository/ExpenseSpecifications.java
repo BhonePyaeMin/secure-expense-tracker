@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Building blocks for the expense list query. Each filter is optional, so the
@@ -15,6 +16,8 @@ import java.util.List;
  * condition is always added.
  */
 public final class ExpenseSpecifications {
+
+    private static final char LIKE_ESCAPE = '!';
 
     private ExpenseSpecifications() {
     }
@@ -31,6 +34,18 @@ public final class ExpenseSpecifications {
         return (root, query, cb) -> cb.equal(root.get("category"), category);
     }
 
+    /** Case-insensitive "contains" on title or note. % and _ typed by the user are matched literally. */
+    public static Specification<Expense> textContains(String text) {
+        String pattern = "%" + escapeLike(text.toLowerCase(Locale.ROOT)) + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("title")), pattern, LIKE_ESCAPE),
+                cb.like(cb.lower(root.get("note")), pattern, LIKE_ESCAPE));
+    }
+
+    private static String escapeLike(String text) {
+        return text.replace("!", "!!").replace("%", "!%").replace("_", "!_");
+    }
+
     public static Specification<Expense> matching(Long ownerId, ExpenseFilter filter) {
         List<Specification<Expense>> specs = new ArrayList<>();
         specs.add(ownedBy(ownerId));
@@ -39,6 +54,9 @@ public final class ExpenseSpecifications {
         }
         if (filter.category() != null) {
             specs.add(hasCategory(filter.category()));
+        }
+        if (filter.q() != null) {
+            specs.add(textContains(filter.q()));
         }
         return Specification.allOf(specs);
     }

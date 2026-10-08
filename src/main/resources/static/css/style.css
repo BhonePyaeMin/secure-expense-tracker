@@ -434,6 +434,25 @@ textarea.field-error {
     border-color: var(--danger);
 }
 
+.hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.hint:empty {
+    display: none;
+}
+
+.site-footer {
+    padding-top: 0;
+    font-size: 0.85rem;
+}
+
+.filters .field-search {
+    flex: 1 1 220px;
+}
+
 .error {
     margin: 0;
     color: var(--danger);

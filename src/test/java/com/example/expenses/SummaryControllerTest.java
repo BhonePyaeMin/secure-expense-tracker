@@ -7,6 +7,7 @@ import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.security.SecurityConfig;
 import com.example.expenses.service.BudgetService;
 import com.example.expenses.service.SummaryService;
+import com.example.expenses.web.MoneyFormatter;
 import com.example.expenses.web.SummaryController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SummaryController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, MoneyFormatter.class})
 class SummaryControllerTest {
 
     private static final YearMonth OCTOBER = YearMonth.of(2026, 10);
@@ -59,7 +60,7 @@ class SummaryControllerTest {
         mockMvc.perform(get("/summary").param("month", "2026-10").with(user(ALICE)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("3,100.00")))
-                .andExpect(content().string(containsString("-100.00")))
+                .andExpect(content().string(containsString("-฿100.00")))
                 .andExpect(content().string(containsString("class=\"over\"")))
                 .andExpect(content().string(containsString("width: 100.0%")))
                 .andExpect(content().string(containsString("/summary?month=2026-09")));

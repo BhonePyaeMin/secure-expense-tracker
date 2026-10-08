@@ -61,6 +61,27 @@ class ExpenseRepositoryTest {
     }
 
     @Test
+    void searchMatchesTitleOrNoteIgnoringCase() {
+        repository.save(new Expense(owner, "Dinner", new BigDecimal("150.00"), Category.FOOD,
+                LocalDate.parse("2026-10-05"), "Thai TEA with Bob"));
+
+        assertThat(search(new ExpenseFilter(null, null, "tea")).getContent())
+                .extracting(Expense::getTitle).containsExactly("Dinner");
+        assertThat(search(new ExpenseFilter(null, null, "RENT")).getContent())
+                .extracting(Expense::getTitle).containsExactly("Rent");
+    }
+
+    @Test
+    void searchTreatsWildcardsLiterally() {
+        repository.save(new Expense(owner, "100% juice", new BigDecimal("30.00"), Category.FOOD,
+                LocalDate.parse("2026-10-06"), null));
+
+        assertThat(search(new ExpenseFilter(null, null, "100%")).getContent())
+                .extracting(Expense::getTitle).containsExactly("100% juice");
+        assertThat(search(new ExpenseFilter(null, null, "_")).getContent()).isEmpty();
+    }
+
+    @Test
     void monthFilterIncludesFirstAndLastDayOnly() {
         Page<Expense> page = search(new ExpenseFilter(YearMonth.of(2026, 10), null));
 

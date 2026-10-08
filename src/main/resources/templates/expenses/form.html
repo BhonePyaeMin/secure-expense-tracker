@@ -8,7 +8,7 @@
 <main class="container narrow">
     <h1 th:text="${expenseId == null} ? 'Add expense' : 'Edit expense'">Add expense</h1>
 
-    <form class="form" method="post" th:object="${expenseForm}"
+    <form class="form" method="post" th:object="${expenseForm}" th:data-suggest-url="@{/expenses/suggest-category}"
           th:action="${expenseId == null} ? @{/expenses} : @{/expenses/{id}(id=${expenseId})}">
 
         <div class="field">
@@ -19,7 +19,7 @@
 
         <div class="field-row">
             <div class="field">
-                <label for="amount">Amount</label>
+                <label for="amount" th:text="|Amount (${@money.symbol})|">Amount</label>
                 <input type="number" th:field="*{amount}" th:errorclass="field-error" step="0.01" min="0.01" inputmode="decimal" required>
                 <p class="error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
             </div>
@@ -37,6 +37,7 @@
                 <option value="">Choose a category</option>
                 <option th:each="c : ${categories}" th:value="${c}" th:text="${c.label}">Food</option>
             </select>
+            <p class="hint" id="category-hint" aria-live="polite"></p>
             <p class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Error</p>
         </div>
 

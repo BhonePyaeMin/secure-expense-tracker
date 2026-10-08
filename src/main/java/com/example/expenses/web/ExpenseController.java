@@ -4,6 +4,7 @@ import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
 import com.example.expenses.security.AppUserDetails;
+import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,12 +24,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Map;
 
 @Controller
 public class ExpenseController {
@@ -37,10 +42,13 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
     private final CsvExportService csvExportService;
+    private final CategorySuggester categorySuggester;
 
-    public ExpenseController(ExpenseService expenseService, CsvExportService csvExportService) {
+    public ExpenseController(ExpenseService expenseService, CsvExportService csvExportService,
+                             CategorySuggester categorySuggester) {
         this.expenseService = expenseService;
         this.csvExportService = csvExportService;
+        this.categorySuggester = categorySuggester;
     }
 
     @ModelAttribute("categories")
@@ -57,9 +65,10 @@ public class ExpenseController {
     public String list(@AuthenticationPrincipal AppUserDetails user,
                        @RequestParam(required = false) YearMonth month,
                        @RequestParam(required = false) Category category,
+                       @RequestParam(required = false) String q,
                        @RequestParam(defaultValue = "0") int page,
                        Model model) {
-        ExpenseFilter filter = new ExpenseFilter(month, category);
+        ExpenseFilter filter = new ExpenseFilter(month, category, q);
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), PAGE_SIZE, NEWEST_FIRST);
         model.addAttribute("filter", filter);
         model.addAttribute("expenses", expenseService.search(user.getId(), filter, pageRequest));
@@ -70,14 +79,25 @@ public class ExpenseController {
     public void export(@AuthenticationPrincipal AppUserDetails user,
                        @RequestParam(required = false) YearMonth month,
                        @RequestParam(required = false) Category category,
+                       @RequestParam(required = false) String q,
                        HttpServletResponse response) throws IOException {
-        ExpenseFilter filter = new ExpenseFilter(month, category);
+        ExpenseFilter filter = new ExpenseFilter(month, category, q);
         String filename = "expenses" + (month != null ? "-" + month : "") + ".csv";
         response.setContentType("text/csv");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 ContentDisposition.attachment().filename(filename).build().toString());
         csvExportService.write(expenseService.findAll(user.getId(), filter), response.getWriter());
+    }
+
+    /** Used by app.js while typing a title: {"category":"TRANSPORT","label":"Transport"}, or 204 if no guess. */
+    @GetMapping(value = "/expenses/suggest-category", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> suggestCategory(@RequestParam(defaultValue = "") String title) {
+        String text = title.length() > 200 ? title.substring(0, 200) : title;
+        return categorySuggester.suggest(text)
+                .map(c -> ResponseEntity.ok(Map.of("category", c.name(), "label", c.getLabel())))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @GetMapping("/expenses/new")

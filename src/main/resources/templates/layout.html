@@ -29,5 +29,9 @@
 <main th:replace="${content}">
     Page content goes here.
 </main>
+
+<footer class="container site-footer muted">
+    Amounts in <span th:text="${@money.code}">THB</span>
+</footer>
 </body>
 </html>

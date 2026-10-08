@@ -28,7 +28,7 @@
         <div class="stat">
             <span class="stat-label">Total spent</span>
             <span class="stat-value"
-                  th:text="${#numbers.formatDecimal(summary.totalSpent(), 1, 'COMMA', 2, 'POINT')}">1,234.50</span>
+                  th:text="${@money.format(summary.totalSpent())}">1,234.50</span>
         </div>
         <div class="stat" th:classappend="${summary.overBudgetCount() > 0} ? 'stat-warning'">
             <span class="stat-label">Over budget</span>
@@ -56,18 +56,18 @@
                     <span th:text="${row.category().label}">Food</span>
                     <span class="badge-over" th:if="${row.overBudget()}">Over budget</span>
                 </td>
-                <td class="num" th:text="${#numbers.formatDecimal(row.spent(), 1, 'COMMA', 2, 'POINT')}">120.00</td>
+                <td class="num" th:text="${@money.format(row.spent())}">120.00</td>
                 <td class="bar-col">
                     <div class="bar-track"><div class="bar" th:style="|width: ${row.barPercent()}%|"></div></div>
                 </td>
                 <td class="num">
                     <span th:if="${row.hasBudget()}"
-                          th:text="${#numbers.formatDecimal(row.limit(), 1, 'COMMA', 2, 'POINT')}">100.00</span>
+                          th:text="${@money.format(row.limit())}">100.00</span>
                     <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>
                 </td>
                 <td class="num">
                     <span th:if="${row.hasBudget()}"
-                          th:text="${#numbers.formatDecimal(row.remaining(), 1, 'COMMA', 2, 'POINT')}">-20.00</span>
+                          th:text="${@money.format(row.remaining())}">-20.00</span>
                     <span th:unless="${row.hasBudget()}" class="muted">&mdash;</span>
                 </td>
             </tr>
@@ -90,7 +90,7 @@
                 <p class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Error</p>
             </div>
             <div class="field">
-                <label for="monthlyLimit">Monthly limit</label>
+                <label for="monthlyLimit" th:text="|Monthly limit (${@money.symbol})|">Monthly limit</label>
                 <input type="number" th:field="*{monthlyLimit}" th:errorclass="field-error"
                        step="0.01" min="0.01" inputmode="decimal" required>
                 <p class="error" th:if="${#fields.hasErrors('monthlyLimit')}" th:errors="*{monthlyLimit}">Error</p>
@@ -103,7 +103,7 @@
         <ul class="budget-list" th:unless="${budgets.isEmpty()}">
             <li th:each="b : ${budgets}">
                 <span th:text="${b.category.label}">Food</span>
-                <span class="num" th:text="${#numbers.formatDecimal(b.monthlyLimit, 1, 'COMMA', 2, 'POINT')}">3,000.00</span>
+                <span class="num" th:text="${@money.format(b.monthlyLimit)}">3,000.00</span>
                 <form method="post" th:action="@{/budgets/{c}/delete(c=${b.category}, month=${month})}"
                       th:data-confirm="|Remove the ${b.category.label} budget?|">
                     <button type="submit" class="link danger">Remove</button>

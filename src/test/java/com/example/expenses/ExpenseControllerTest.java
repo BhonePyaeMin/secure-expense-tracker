@@ -5,10 +5,12 @@ import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.security.SecurityConfig;
+import com.example.expenses.service.CategorySuggester;
 import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseNotFoundException;
 import com.example.expenses.service.ExpenseService;
 import com.example.expenses.web.ExpenseController;
+import com.example.expenses.web.MoneyFormatter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,13 +37,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(ExpenseController.class)
-@Import({SecurityConfig.class, CsvExportService.class})
+@Import({SecurityConfig.class, CsvExportService.class, CategorySuggester.class, MoneyFormatter.class})
 class ExpenseControllerTest {
 
     private static final AppUserDetails ALICE = new AppUserDetails(1L, "alice", "unused", false);
@@ -61,7 +64,7 @@ class ExpenseControllerTest {
         mockMvc.perform(get("/expenses").param("month", "2026-10").param("category", "FOOD").with(user(ALICE)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Lunch")))
-                .andExpect(content().string(containsString("1,234.50")))
+                .andExpect(content().string(containsString("฿1,234.50")))
                 .andExpect(content().string(containsString("25 expenses")))
                 .andExpect(content().string(containsString("Page 1 of 3")))
                 .andExpect(content().string(containsString("/expenses?month=2026-10&amp;category=FOOD&amp;page=1")))
@@ -142,6 +145,31 @@ class ExpenseControllerTest {
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"expenses-2026-10.csv\""))
                 .andExpect(content().string("\uFEFFid,title,amount,category,date,note\r\n"
                         + "null,\"Lunch, with \"\"Bob\"\"\",85.00,FOOD,2026-10-01,\r\n"));
+    }
+
+    @Test
+    void searchTermIsKeptInPaginationLinks() throws Exception {
+        Expense tea = new Expense(null, "Milk tea", new BigDecimal("45.00"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
+        when(expenseService.search(eq(1L), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(tea), PageRequest.of(0, 10), 25));
+
+        mockMvc.perform(get("/expenses").param("q", "milk tea & cake").with(user(ALICE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("q=milk%20tea%20%26%20cake&amp;page=1")));
+    }
+
+    @Test
+    void suggestsCategoryForATitle() throws Exception {
+        mockMvc.perform(get("/expenses/suggest-category").param("title", "grab ride").with(user(ALICE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.category").value("TRANSPORT"))
+                .andExpect(jsonPath("$.label").value("Transport"));
+    }
+
+    @Test
+    void noSuggestionGivesNoContent() throws Exception {
+        mockMvc.perform(get("/expenses/suggest-category").param("title", "something else").with(user(ALICE)))
+                .andExpect(status().isNoContent());
     }
 
     @Test
