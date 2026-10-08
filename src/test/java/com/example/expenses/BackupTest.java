@@ -64,6 +64,9 @@ class BackupTest {
     @Autowired
     private AuditEntryRepository auditEntryRepository;
 
+    @Autowired
+    private com.example.expenses.repository.SavingsGoalRepository goalRepository;
+
     private AppUserDetails alice;
 
     @BeforeEach
@@ -82,6 +85,8 @@ class BackupTest {
         expenseRepository.save(trashed);
         incomeRepository.save(new Income(aliceUser, new BigDecimal("8000.00"), "Allowance", LocalDate.of(2026, 10, 1)));
         budgetRepository.save(new Budget(aliceUser, Category.FOOD, new BigDecimal("3000.00")));
+        goalRepository.save(new com.example.expenses.model.SavingsGoal(aliceUser, "Laptop", new BigDecimal("35000.00"),
+                new BigDecimal("500.00"), null));
 
         expenseRepository.save(new Expense(bob, "Bob private thing", new BigDecimal("1.00"), Category.FUN,
                 LocalDate.of(2026, 10, 1), null));
@@ -99,7 +104,8 @@ class BackupTest {
 
         Map<String, String> files = unzip(result.getResponse().getContentAsByteArray());
 
-        assertThat(files).containsOnlyKeys("expenses.csv", "income.csv", "budgets.csv", "recurring.csv");
+        assertThat(files).containsOnlyKeys("expenses.csv", "income.csv", "budgets.csv", "recurring.csv", "goals.csv");
+        assertThat(files.get("goals.csv")).contains("Laptop,35000.00,500.00,");
         assertThat(files.get("expenses.csv"))
                 .startsWith("\uFEFFid,title,amount,category,date,note,payment_method,deleted_at,recurring_expense_id")
                 .contains("\"Lunch, with friends\",85.00,FOOD,2026-10-01,,PROMPTPAY,,")

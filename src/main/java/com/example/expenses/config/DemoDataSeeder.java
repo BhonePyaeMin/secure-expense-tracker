@@ -5,10 +5,12 @@ import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
 import com.example.expenses.model.Income;
 import com.example.expenses.model.PaymentMethod;
+import com.example.expenses.model.SavingsGoal;
 import com.example.expenses.model.User;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.IncomeRepository;
+import com.example.expenses.repository.SavingsGoalRepository;
 import com.example.expenses.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,11 +74,13 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
     private final IncomeRepository incomeRepository;
+    private final SavingsGoalRepository goalRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DemoDataSeeder(UserRepository userRepository, ExpenseRepository expenseRepository,
                           BudgetRepository budgetRepository, IncomeRepository incomeRepository,
-                          PasswordEncoder passwordEncoder) {
+                          SavingsGoalRepository goalRepository, PasswordEncoder passwordEncoder) {
+        this.goalRepository = goalRepository;
         this.userRepository = userRepository;
         this.expenseRepository = expenseRepository;
         this.budgetRepository = budgetRepository;
@@ -91,6 +95,10 @@ public class DemoDataSeeder implements ApplicationRunner {
                 .orElseGet(() -> userRepository.save(new User(DEMO_USERNAME, passwordEncoder.encode(DEMO_PASSWORD))));
         LocalDate today = LocalDate.now();
         seedIncome(demo, today);
+        if (goalRepository.countByOwnerId(demo.getId()) == 0) {
+            goalRepository.save(new SavingsGoal(demo, "New laptop", new BigDecimal("35000.00"),
+                    new BigDecimal("12000.00"), today.plusMonths(5).withDayOfMonth(1).minusDays(1)));
+        }
         if (expenseRepository.countByOwnerId(demo.getId()) > 0) {
             log.info("Demo profile: demo account already has data, skipping seed");
             return;

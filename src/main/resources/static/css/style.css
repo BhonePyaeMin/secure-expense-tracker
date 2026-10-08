@@ -437,6 +437,67 @@ tr.total-row td {
     border-top: 2px solid var(--border);
 }
 
+/* Savings goals */
+
+.goals {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.goal-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.goal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.goal-head h2 {
+    margin: 0;
+}
+
+.goal-amounts,
+.goal-plan {
+    margin: 0;
+}
+
+.goal-plan {
+    font-size: 0.9rem;
+}
+
+.goal-bar {
+    height: 12px;
+}
+
+.goal-move {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.goal-move input {
+    flex: 1;
+    min-width: 0;
+}
+
+.badge-done {
+    padding: 0 0.5rem;
+    border-radius: 999px;
+    background: var(--success-bg);
+    color: var(--success-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 /* Chart */
 
 .chart-card {

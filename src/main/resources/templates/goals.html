@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Savings goals · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Savings goals</h1>
+    </div>
+    <p class="muted">Put money aside for something, like a laptop fund. Add or take out money as you go.</p>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Goal added.</p>
+    <p class="alert" th:if="${error}" th:text="${error}">You can't take out more than is saved.</p>
+
+    <p class="empty" th:if="${goals.isEmpty()}">No goals yet. Add one below.</p>
+
+    <div class="goals" th:unless="${goals.isEmpty()}">
+        <article class="goal-card" th:each="g : ${goals}">
+            <div class="goal-head">
+                <h2 th:text="${g.name}">New laptop</h2>
+                <span class="badge-done" th:if="${g.reached}">Reached</span>
+            </div>
+            <p class="goal-amounts">
+                <strong th:text="${@money.format(g.savedAmount)}">฿12,000.00</strong>
+                <span class="muted" th:text="|of ${@money.format(g.targetAmount)} · ${g.percent}%|">of ฿35,000.00 · 34.3%</span>
+            </p>
+            <div class="bar-track goal-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                 th:aria-valuenow="${g.barPercent}" th:aria-label="|${g.name}: ${g.percent}% saved|">
+                <div class="bar" th:style="|width: ${g.barPercent}%|"></div>
+            </div>
+            <p class="goal-plan" th:with="perMonth=${g.monthlyNeeded(today)}">
+                <span th:if="${g.reached}">Target reached.</span>
+                <span th:unless="${g.reached}" th:text="|${@money.format(g.remaining)} to go|">฿23,000.00 to go</span>
+                <span th:if="${perMonth != null}"
+                      th:text="|· save ${@money.format(perMonth)} a month to reach it by ${#temporals.format(g.targetDate, 'd MMM yyyy')}|">
+                    · save ฿3,833.34 a month to reach it by 31 Mar 2027</span>
+                <span class="change-up" th:if="${g.isOverdue(today)}"
+                      th:text="|· target date ${#temporals.format(g.targetDate, 'd MMM yyyy')} has passed|">
+                    · target date has passed</span>
+            </p>
+            <form class="goal-move" method="post" th:action="@{/goals/{id}/deposit(id=${g.id})}">
+                <label class="sr-only" th:for="|amount-${g.id}|">Amount</label>
+                <input type="number" th:id="|amount-${g.id}|" name="amount" step="0.01" min="0.01"
+                       inputmode="decimal" required th:placeholder="|Amount (${@money.symbol})|">
+                <button type="submit" class="button">Add</button>
+                <button type="submit" class="button secondary"
+                        th:formaction="@{/goals/{id}/withdraw(id=${g.id})}">Take out</button>
+            </form>
+            <form method="post" th:action="@{/goals/{id}/delete(id=${g.id})}"
+                  th:data-confirm="|Delete the goal '${g.name}'? This only removes the goal, not any expenses.|">
+                <button type="submit" class="link danger">Delete goal</button>
+            </form>
+        </article>
+    </div>
+
+    <section class="budgets">
+        <h2>Add a goal</h2>
+        <form class="form" method="post" th:action="@{/goals}" th:object="${goalForm}">
+            <div class="field">
+                <label for="name">Name</label>
+                <input type="text" th:field="*{name}" th:errorclass="field-error" maxlength="100" required
+                       placeholder="e.g. New laptop">
+                <p class="error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</p>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="targetAmount" th:text="|Target (${@money.symbol})|">Target</label>
+                    <input type="number" th:field="*{targetAmount}" th:errorclass="field-error" step="0.01"
+                           min="0.01" inputmode="decimal" required>
+                    <p class="error" th:if="${#fields.hasErrors('targetAmount')}" th:errors="*{targetAmount}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="targetDate">By <span class="muted">(optional)</span></label>
+                    <input type="date" th:field="*{targetDate}" th:errorclass="field-error">
+                    <p class="error" th:if="${#fields.hasErrors('targetDate')}" th:errors="*{targetDate}">Error</p>
+                </div>
+            </div>
+            <div class="field">
+                <label for="alreadySaved">Already saved <span class="muted">(optional)</span></label>
+                <input type="number" th:field="*{alreadySaved}" th:errorclass="field-error" step="0.01" min="0"
+                       inputmode="decimal">
+                <p class="error" th:if="${#fields.hasErrors('alreadySaved')}" th:errors="*{alreadySaved}">Error</p>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button">Add goal</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

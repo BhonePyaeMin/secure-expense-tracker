@@ -5,10 +5,12 @@ import com.example.expenses.model.Budget;
 import com.example.expenses.model.Expense;
 import com.example.expenses.model.Income;
 import com.example.expenses.model.RecurringExpense;
+import com.example.expenses.model.SavingsGoal;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.IncomeRepository;
 import com.example.expenses.repository.RecurringExpenseRepository;
+import com.example.expenses.repository.SavingsGoalRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,11 +37,13 @@ public class BackupService {
     private final IncomeRepository incomeRepository;
     private final BudgetRepository budgetRepository;
     private final RecurringExpenseRepository recurringRepository;
+    private final SavingsGoalRepository goalRepository;
     private final AuditService auditService;
 
     public BackupService(ExpenseRepository expenseRepository, IncomeRepository incomeRepository,
                          BudgetRepository budgetRepository, RecurringExpenseRepository recurringRepository,
-                         AuditService auditService) {
+                         SavingsGoalRepository goalRepository, AuditService auditService) {
+        this.goalRepository = goalRepository;
         this.expenseRepository = expenseRepository;
         this.incomeRepository = incomeRepository;
         this.budgetRepository = budgetRepository;
@@ -81,6 +85,13 @@ public class BackupService {
             row(writer, r.getId(), Csv.escape(r.getTitle()), r.getAmount().toPlainString(), r.getCategory().name(),
                     r.getDayOfMonth(), r.getNextDueDate(), r.isActive(),
                     r.getPaymentMethod() == null ? "" : r.getPaymentMethod().name(), Csv.escape(r.getNote()));
+        }
+        endFile(zip, writer);
+
+        startFile(zip, writer, "goals.csv", "id,name,target_amount,saved_amount,target_date");
+        for (SavingsGoal g : goalRepository.findAllByOwnerIdOrderByCreatedAtAscIdAsc(userId)) {
+            row(writer, g.getId(), Csv.escape(g.getName()), g.getTargetAmount().toPlainString(),
+                    g.getSavedAmount().toPlainString(), orEmpty(g.getTargetDate()));
         }
         endFile(zip, writer);
 
