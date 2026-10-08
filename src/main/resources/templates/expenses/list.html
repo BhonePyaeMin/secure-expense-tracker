@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Expenses · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Expenses</h1>
+        <a class="button" th:href="@{/expenses/new}">Add expense</a>
+    </div>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Expense added.</p>
+
+    <p class="empty" th:if="${#lists.isEmpty(expenses)}">
+        No expenses yet. <a th:href="@{/expenses/new}">Add your first one</a>.
+    </p>
+
+    <div class="table-wrap" th:unless="${#lists.isEmpty(expenses)}">
+        <table>
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th class="num">Amount</th>
+                <th>Note</th>
+                <th><span class="sr-only">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${expenses}">
+                <td class="nowrap" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
+                <td th:text="${e.title}">Lunch</td>
+                <td><span class="tag" th:text="${e.category.label}">Food</span></td>
+                <td class="num" th:text="${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">12.50</td>
+                <td class="muted" th:text="${e.note}">With friends</td>
+                <td class="actions">
+                    <a th:href="@{/expenses/{id}/edit(id=${e.id})}">Edit</a>
+                    <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post">
+                        <button type="submit" class="link danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>

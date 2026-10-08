@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:replace="${title}">Expense Tracker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header class="site-header">
+    <div class="container header-inner">
+        <a class="brand" th:href="@{/expenses}">Expense Tracker</a>
+        <nav>
+            <a th:href="@{/expenses}">Expenses</a>
+            <a th:href="@{/expenses/new}">Add expense</a>
+        </nav>
+    </div>
+</header>
+
+<main th:replace="${content}">
+    Page content goes here.
+</main>
+</body>
+</html>
