@@ -1,6 +1,7 @@
 package com.example.expenses.repository;
 
 import com.example.expenses.dto.CategoryTotal;
+import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.model.Expense;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -28,4 +29,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
     List<CategoryTotal> totalsByCategory(@Param("ownerId") Long ownerId,
                                          @Param("from") LocalDate from,
                                          @Param("to") LocalDate to);
+
+    /** One row per day that has spending, oldest first. */
+    @Query("""
+            select new com.example.expenses.dto.DailyTotal(e.date, sum(e.amount))
+            from Expense e
+            where e.owner.id = :ownerId and e.date between :from and :to
+            group by e.date
+            order by e.date
+            """)
+    List<DailyTotal> dailyTotals(@Param("ownerId") Long ownerId,
+                                 @Param("from") LocalDate from,
+                                 @Param("to") LocalDate to);
 }

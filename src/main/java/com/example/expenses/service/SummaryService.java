@@ -2,6 +2,8 @@ package com.example.expenses.service;
 
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
+import com.example.expenses.dto.DailySpending;
+import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
@@ -12,11 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 @Service
 @Transactional(readOnly = true)
@@ -62,6 +67,19 @@ public class SummaryService {
                 .toList();
 
         return new MonthlySummary(month, totalSpent, rows);
+    }
+
+    /** Spending for every day of the month, with zero for days without expenses (for the chart). */
+    public DailySpending dailySpending(Long userId, YearMonth month) {
+        Map<LocalDate, BigDecimal> byDate = new HashMap<>();
+        for (DailyTotal total : expenseRepository.dailyTotals(userId, month.atDay(1), month.atEndOfMonth())) {
+            byDate.put(total.date(), total.total());
+        }
+        List<DailyTotal> days = IntStream.rangeClosed(1, month.lengthOfMonth())
+                .mapToObj(month::atDay)
+                .map(date -> new DailyTotal(date, money(byDate.getOrDefault(date, BigDecimal.ZERO))))
+                .toList();
+        return new DailySpending(month, days);
     }
 
     private static CategorySummary row(Category category, BigDecimal spent, BigDecimal limit, BigDecimal biggest) {

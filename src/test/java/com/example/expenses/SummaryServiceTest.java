@@ -2,6 +2,8 @@ package com.example.expenses;
 
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
+import com.example.expenses.dto.DailySpending;
+import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
@@ -108,6 +110,33 @@ class SummaryServiceTest {
         assertThat(summary.categories()).extracting(CategorySummary::barPercent)
                 .usingElementComparator(BigDecimal::compareTo)
                 .containsExactly(new BigDecimal("100.0"), new BigDecimal("25.0"), new BigDecimal("6.2"));
+    }
+
+    @Test
+    void dailySpendingHasEveryDayOfTheMonthWithZerosForQuietDays() {
+        when(expenseRepository.dailyTotals(USER_ID, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
+                .thenReturn(List.of(
+                        new DailyTotal(LocalDate.of(2026, 10, 2), new BigDecimal("65.5")),
+                        new DailyTotal(LocalDate.of(2026, 10, 31), new BigDecimal("10"))));
+
+        DailySpending daily = summaryService.dailySpending(USER_ID, OCTOBER);
+
+        assertThat(daily.days()).hasSize(31);
+        assertThat(daily.amountsCsv()).startsWith("0.00,65.50,0.00,").endsWith(",10.00");
+        assertThat(daily.daysWithSpending()).extracting(DailyTotal::date)
+                .containsExactly(LocalDate.of(2026, 10, 2), LocalDate.of(2026, 10, 31));
+        assertThat(daily.total()).isEqualByComparingTo("75.50");
+    }
+
+    @Test
+    void dailySpendingForAMonthWithNoExpensesHasNothingToChart() {
+        when(expenseRepository.dailyTotals(USER_ID, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)))
+                .thenReturn(List.of());
+
+        DailySpending daily = summaryService.dailySpending(USER_ID, YearMonth.of(2026, 2));
+
+        assertThat(daily.days()).hasSize(28);
+        assertThat(daily.hasSpending()).isFalse();
     }
 
     private void givenTotals(CategoryTotal... totals) {

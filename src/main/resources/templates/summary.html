@@ -37,6 +37,41 @@
         </div>
     </div>
 
+    <section class="chart-card" th:if="${daily.hasSpending()}">
+        <h2>Spending by day</h2>
+        <!-- th:data-* attributes are evaluated in Thymeleaf's restricted mode (no bean references), so resolve the symbol here -->
+        <div class="chart-box" th:with="currencySymbol=${@money.symbol}">
+            <canvas id="daily-chart" role="img"
+                    th:aria-label="|Column chart of spending per day in ${#temporals.format(month.atDay(1), 'MMMM yyyy')}. The same numbers are in the table below.|"
+                    th:data-month="${month}" th:data-amounts="${daily.amountsCsv()}"
+                    th:data-currency="${currencySymbol}"></canvas>
+        </div>
+        <p id="chart-fallback" class="muted" hidden>
+            The chart couldn't load (it needs an internet connection). The numbers are in the table below.
+        </p>
+        <details class="table-view">
+            <summary>Show as a table</summary>
+            <table>
+                <thead>
+                <tr>
+                    <th>Day</th>
+                    <th class="num">Spent</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="day : ${daily.daysWithSpending()}">
+                    <td th:text="${#temporals.format(day.date(), 'EEE dd MMM')}">Mon 05 Oct</td>
+                    <td class="num" th:text="${@money.format(day.total())}">฿65.00</td>
+                </tr>
+                </tbody>
+            </table>
+        </details>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+                integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+                crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+        <script th:src="@{/js/summary-chart.js}" defer></script>
+    </section>
+
     <p class="empty" th:if="${summary.categories().isEmpty()}">No spending recorded for this month.</p>
 
     <div class="table-wrap" th:unless="${summary.categories().isEmpty()}">

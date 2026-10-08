@@ -71,6 +71,7 @@ public class SummaryController {
     private void addSummary(Model model, Long userId, YearMonth month) {
         YearMonth selected = month != null ? month : YearMonth.now();
         model.addAttribute("summary", summaryService.summarize(userId, selected));
+        model.addAttribute("daily", summaryService.dailySpending(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));
     }
 
