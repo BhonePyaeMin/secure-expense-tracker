@@ -33,6 +33,9 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>, JpaSpec
 
     long countByOwnerId(Long ownerId);
 
+    /** Removes all of a user's expenses, including the trash (restore in "replace" mode). */
+    long deleteByOwnerId(Long ownerId);
+
     /** Everything, including the trash (for backups). */
     List<Expense> findAllByOwnerIdOrderByDateAscIdAsc(Long ownerId);
 

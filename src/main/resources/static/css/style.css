@@ -808,3 +808,38 @@ code {
     }
 
 }
+
+/* Restore */
+
+.restore-choice fieldset {
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 0;
+}
+
+.restore-choice legend {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+label.choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    font-weight: normal;
+    font-size: 0.95rem;
+}
+
+label.choice input {
+    width: auto;
+    margin-top: 0.3rem;
+}
+
+label.choice.confirm-replace {
+    padding-left: 1.6rem;
+}
+
+.report {
+    padding-left: 1.25rem;
+}

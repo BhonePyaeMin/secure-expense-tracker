@@ -8,7 +8,9 @@ import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -49,10 +51,29 @@ public class CsvImportService {
         }
     }
 
-    public Result read(String csv) {
+    /**
+     * One data row: the expense it describes and what's wrong with it, if anything.
+     *
+     * @param rowNumber the row as a spreadsheet shows it (the header is row 1)
+     * @param deletedAt set when the row came from the trash (backup files have a deleted_at column)
+     */
+    public record Row(int rowNumber, ExpenseForm expense, Instant deletedAt, List<String> errors)
+            implements Serializable {
+
+        public boolean isValid() {
+            return errors.isEmpty();
+        }
+    }
+
+    /** A problem with the whole file (empty, missing columns, too big), or one Row per data row. */
+    public record Rows(String fileError, List<Row> rows) {
+    }
+
+    /** Reads every row and checks it with the add-expense rules, without deciding what to do with bad rows. */
+    public Rows readRows(String csv) {
         List<List<String>> rows = Csv.parse(csv);
         if (rows.isEmpty()) {
-            return failure("The file is empty.");
+            return new Rows("The file is empty.", List.of());
         }
         Map<String, Integer> columns = columnIndexes(rows.get(0));
         List<String> missing = new ArrayList<>();
@@ -62,27 +83,49 @@ public class CsvImportService {
             }
         }
         if (!missing.isEmpty()) {
-            return failure("The first row must name the columns. Missing: " + String.join(", ", missing)
-                    + ". Expected title, amount, date, and optionally category and note.");
+            return new Rows("The first row must name the columns. Missing: " + String.join(", ", missing)
+                    + ". Expected title, amount, date, and optionally category and note.", List.of());
         }
         if (rows.size() - 1 > MAX_ROWS) {
-            return failure("The file has " + (rows.size() - 1) + " rows. The limit is " + MAX_ROWS + " per import.");
+            return new Rows("The file has " + (rows.size() - 1) + " rows. The limit is " + MAX_ROWS + " per import.",
+                    List.of());
         }
 
-        List<ExpenseForm> expenses = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
+        List<Row> result = new ArrayList<>();
         for (int i = 1; i < rows.size(); i++) {
             List<String> rowErrors = new ArrayList<>();
             ExpenseForm form = toForm(rows.get(i), columns, rowErrors);
+            Instant deletedAt = null;
+            String deleted = cell(rows.get(i), columns, "deleted_at");
+            if (StringUtils.hasText(deleted)) {
+                try {
+                    deletedAt = Instant.parse(deleted);
+                } catch (DateTimeParseException e) {
+                    rowErrors.add("\"" + deleted + "\" is not a valid deleted_at time");
+                }
+            }
             if (rowErrors.isEmpty()) {
                 validator.validate(form).stream()
                         .sorted(Comparator.comparing(v -> v.getPropertyPath().toString()))
                         .map(ConstraintViolation::getMessage)
                         .forEach(rowErrors::add);
             }
-            int rowNumber = i + 1; // the header is row 1, like in a spreadsheet
-            rowErrors.forEach(error -> errors.add("Row " + rowNumber + ": " + error));
-            expenses.add(form);
+            result.add(new Row(i + 1, form, deletedAt, List.copyOf(rowErrors)));
+        }
+        return new Rows(null, result);
+    }
+
+    /** For the Import page: every row must be valid, or nothing is imported. */
+    public Result read(String csv) {
+        Rows rows = readRows(csv);
+        if (rows.fileError() != null) {
+            return failure(rows.fileError());
+        }
+        List<ExpenseForm> expenses = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        for (Row row : rows.rows()) {
+            row.errors().forEach(error -> errors.add("Row " + row.rowNumber() + ": " + error));
+            expenses.add(row.expense());
         }
         if (errors.isEmpty()) {
             return new Result(expenses, List.of());

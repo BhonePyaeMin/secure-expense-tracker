@@ -12,4 +12,8 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
     Optional<Budget> findByOwnerIdAndCategory(Long ownerId, Category category);
 
     List<Budget> findAllByOwnerIdOrderByCategoryAsc(Long ownerId);
+
+    long countByOwnerId(Long ownerId);
+
+    long deleteByOwnerId(Long ownerId);
 }

@@ -10,6 +10,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -17,7 +19,10 @@ import java.time.LocalDate;
  * What the add/edit form binds to. Keeping it separate from the entity means
  * a request can never set fields like the id.
  */
-public class ExpenseForm {
+public class ExpenseForm implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "Title is required")
     @Size(max = 100, message = "Title must be at most 100 characters")

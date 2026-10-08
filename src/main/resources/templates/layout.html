@@ -24,6 +24,7 @@
             <span class="muted" th:text="${currentUsername}">alice</span>
             <a th:href="@{/activity}">Activity</a>
             <a th:href="@{/backup}" title="Download all your data as CSV files in a ZIP">Backup</a>
+            <a th:href="@{/restore}" title="Add or replace data from a backup file">Restore</a>
             <form method="post" th:action="@{/logout}">
                 <button type="submit" class="link">Sign out</button>
             </form>

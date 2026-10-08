@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Restore report · Expense Tracker</title>
+</head>
+<body>
+<main class="container narrow" th:with="r=${report}">
+    <h1>Restore finished</h1>
+    <p class="muted" th:text="|From ${filename}|">From backup.zip</p>
+
+    <ul class="report">
+        <li th:if="${r.replaced()}"
+            th:text="|Deleted your previous ${r.expensesDeleted()} expenses and ${r.budgetsDeleted()} budgets.|">Deleted.</li>
+        <li th:text="|Added ${r.expensesAdded()} expenses.|">Added 24 expenses.</li>
+        <li th:text="|Added ${r.budgetsAdded()} budgets.|">Added 3 budgets.</li>
+        <li th:if="${r.budgetsKept() > 0}"
+            th:text="|Kept ${r.budgetsKept()} budgets you already had for the same category.|">Kept 1 budget.</li>
+        <li th:text="|Skipped ${r.skipped().size()} rows with problems.|">Skipped 1 row.</li>
+    </ul>
+
+    <div class="alert" th:unless="${r.skipped().isEmpty()}">
+        <p class="alert-title">Skipped rows</p>
+        <ul>
+            <li th:each="s : ${r.skipped()}" th:text="${s}">expenses.csv row 3: Amount must be greater than 0</li>
+        </ul>
+    </div>
+
+    <div class="form-actions">
+        <a class="button" th:href="@{/expenses}">Go to expenses</a>
+        <a th:href="@{/trash}">Trash</a>
+    </div>
+</main>
+</body>
+</html>

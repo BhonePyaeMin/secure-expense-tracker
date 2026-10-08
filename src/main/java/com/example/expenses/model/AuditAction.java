@@ -12,6 +12,7 @@ public enum AuditAction {
     EXPENSE_PURGED("Deleted forever"),
     EXPENSES_IMPORTED("Expenses imported"),
     BACKUP_DOWNLOADED("Backup downloaded"),
+    DATA_RESTORED("Restored from a backup"),
     BUDGET_SET("Budget set"),
     BUDGET_REMOVED("Budget removed"),
     INCOME_ADDED("Income added"),

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Check restore · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1>Check before restoring</h1>
+    </div>
+    <p class="muted" th:text="|Nothing has been saved yet. File: ${plan.filename()}|">Nothing has been saved yet.</p>
+
+    <p class="alert" th:if="${error}" th:text="${error}">Tick the box to replace.</p>
+    <div class="alert" th:unless="${plan.fileErrors().isEmpty()}">
+        <p class="alert-title">Problems with the file:</p>
+        <ul>
+            <li th:each="e : ${plan.fileErrors()}" th:text="${e}">expenses.csv: missing columns</li>
+        </ul>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-label">Expenses to restore</span>
+            <span class="stat-value" th:text="${plan.validExpenses()}">24</span>
+            <span class="stat-note" th:classappend="${plan.invalidExpenses() > 0} ? 'change-up' : 'muted'"
+                  th:text="|${plan.invalidExpenses()} will be skipped|">1 will be skipped</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Budgets to restore</span>
+            <span class="stat-value" th:text="${plan.validBudgets()}">3</span>
+            <span class="stat-note" th:classappend="${plan.invalidBudgets() > 0} ? 'change-up' : 'muted'"
+                  th:text="|${plan.invalidBudgets()} will be skipped|">0 will be skipped</span>
+        </div>
+    </div>
+    <p class="muted" th:unless="${plan.ignoredFiles().isEmpty()}"
+       th:text="|Not restored (not supported yet): ${#strings.listJoin(plan.ignoredFiles(), ', ')}|">Not restored: income.csv</p>
+
+    <form class="form restore-choice" method="post" th:action="@{/restore/confirm}" th:if="${plan.hasAnythingToRestore()}">
+        <fieldset>
+            <legend>What should happen to your current data?</legend>
+            <label class="choice">
+                <input type="radio" name="mode" value="add" th:checked="${mode != 'replace'}">
+                <span><strong>Add to my data</strong> (recommended). Your
+                    <span th:text="${current.expenses()}">12</span> expenses and
+                    <span th:text="${current.budgets()}">2</span> budgets stay. A budget for a category you already
+                    have a budget for is left as it is.</span>
+            </label>
+            <label class="choice">
+                <input type="radio" name="mode" value="replace" th:checked="${mode == 'replace'}">
+                <span><strong>Replace my expenses and budgets.</strong> Deletes your current expenses (including the
+                    trash) and budgets first. Income, recurring expenses and goals are not touched.</span>
+            </label>
+            <label class="choice confirm-replace">
+                <input type="checkbox" name="confirmReplace" value="true">
+                <span th:text="|Yes, delete my ${current.expenses()} expenses and ${current.budgets()} budgets before restoring (only needed for Replace).|">
+                    Yes, delete my current data first.</span>
+            </label>
+        </fieldset>
+        <div class="form-actions">
+            <button type="submit" class="button">Restore</button>
+            <a th:href="@{/restore}">Cancel</a>
+        </div>
+    </form>
+    <p class="empty" th:unless="${plan.hasAnythingToRestore()}">There's nothing in this file that can be restored.</p>
+
+    <section class="insight" th:unless="${plan.expenses().isEmpty()}">
+        <h2>Expenses in the file</h2>
+        <div class="table-wrap">
+            <table class="cards-on-mobile">
+                <thead>
+                <tr>
+                    <th>Row</th>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="num">Amount</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row, iter : ${plan.expenses()}" th:if="${iter.index < 200}"
+                    th:classappend="${!row.isValid()} ? 'over'">
+                    <td class="muted" data-label="Row" th:text="${row.rowNumber()}">2</td>
+                    <td class="nowrap" data-label="Date" th:text="${row.expense().date}">2026-10-01</td>
+                    <td class="title-cell" data-label="Title" th:text="${row.expense().title}">Lunch</td>
+                    <td data-label="Category" th:text="${row.expense().category != null} ? ${row.expense().category.label} : ''">Food</td>
+                    <td class="num" data-label="Amount"
+                        th:text="${row.expense().amount != null} ? ${@money.format(row.expense().amount)} : ''">฿85.00</td>
+                    <td data-label="Status">
+                        <span th:if="${row.isValid() and row.deletedAt() == null}">OK</span>
+                        <span th:if="${row.isValid() and row.deletedAt() != null}" class="muted">OK, goes to the trash</span>
+                        <span th:unless="${row.isValid()}" class="change-up"
+                              th:text="|Skipped: ${#strings.listJoin(row.errors(), '; ')}|">Skipped: amount</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted" th:if="${plan.expenses().size() > 200}"
+           th:text="|Showing the first 200 of ${plan.expenses().size()} rows.|">Showing the first 200.</p>
+    </section>
+
+    <section class="insight" th:unless="${plan.budgets().isEmpty()}">
+        <h2>Budgets in the file</h2>
+        <ul class="budget-list">
+            <li th:each="b : ${plan.budgets()}">
+                <span th:text="${b.category() != null} ? ${b.category().label} : |Row ${b.rowNumber()}|">Food</span>
+                <span th:if="${b.isValid()}" class="num" th:text="${@money.format(b.monthlyLimit())}">฿3,000.00</span>
+                <span th:unless="${b.isValid()}" class="change-up"
+                      th:text="|Skipped: ${#strings.listJoin(b.errors(), '; ')}|">Skipped</span>
+            </li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>
