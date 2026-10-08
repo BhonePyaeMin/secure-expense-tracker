@@ -3,10 +3,14 @@ package com.example.expenses.web;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.dto.ExpenseForm;
 import com.example.expenses.model.Category;
+import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -17,6 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -28,9 +34,11 @@ public class ExpenseController {
     private static final String FORM_VIEW = "expenses/form";
 
     private final ExpenseService expenseService;
+    private final CsvExportService csvExportService;
 
-    public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(ExpenseService expenseService, CsvExportService csvExportService) {
         this.expenseService = expenseService;
+        this.csvExportService = csvExportService;
     }
 
     @ModelAttribute("categories")
@@ -53,6 +61,19 @@ public class ExpenseController {
         model.addAttribute("filter", filter);
         model.addAttribute("expenses", expenseService.search(filter, pageRequest));
         return "expenses/list";
+    }
+
+    @GetMapping("/expenses/export")
+    public void export(@RequestParam(required = false) YearMonth month,
+                       @RequestParam(required = false) Category category,
+                       HttpServletResponse response) throws IOException {
+        ExpenseFilter filter = new ExpenseFilter(month, category);
+        String filename = "expenses" + (month != null ? "-" + month : "") + ".csv";
+        response.setContentType("text/csv");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.attachment().filename(filename).build().toString());
+        csvExportService.write(expenseService.findAll(filter), response.getWriter());
     }
 
     @GetMapping("/expenses/new")

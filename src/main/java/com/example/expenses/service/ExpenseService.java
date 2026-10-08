@@ -7,9 +7,12 @@ import com.example.expenses.repository.ExpenseRepository;
 import com.example.expenses.repository.ExpenseSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,6 +26,12 @@ public class ExpenseService {
 
     public Page<Expense> search(ExpenseFilter filter, Pageable pageable) {
         return expenseRepository.findAll(ExpenseSpecifications.matching(filter), pageable);
+    }
+
+    /** Everything matching the filter, oldest first (used for export). */
+    public List<Expense> findAll(ExpenseFilter filter) {
+        return expenseRepository.findAll(ExpenseSpecifications.matching(filter),
+                Sort.by(Sort.Order.asc("date"), Sort.Order.asc("id")));
     }
 
     public Expense findById(Long id) {

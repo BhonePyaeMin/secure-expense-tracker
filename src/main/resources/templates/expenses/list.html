@@ -8,7 +8,10 @@
 <main class="container">
     <div class="page-head">
         <h1>Expenses</h1>
-        <a class="button" th:href="@{/expenses/new}">Add expense</a>
+        <div class="head-actions">
+            <a th:href="@{${filter.url('/expenses/export')}}">Export CSV</a>
+            <a class="button" th:href="@{/expenses/new}">Add expense</a>
+        </div>
     </div>
 
     <p class="flash" th:if="${message}" th:text="${message}">Expense added.</p>
@@ -42,7 +45,7 @@
            th:text="${expenses.totalElements} + (${expenses.totalElements == 1} ? ' expense' : ' expenses')">12 expenses</p>
 
         <div class="table-wrap">
-            <table>
+            <table class="cards-on-mobile">
                 <thead>
                 <tr>
                     <th>Date</th>
@@ -55,14 +58,15 @@
                 </thead>
                 <tbody>
                 <tr th:each="e : ${expenses}">
-                    <td class="nowrap" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
-                    <td th:text="${e.title}">Lunch</td>
-                    <td><span class="tag" th:text="${e.category.label}">Food</span></td>
-                    <td class="num" th:text="${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">12.50</td>
-                    <td class="muted" th:text="${e.note}">With friends</td>
+                    <td class="nowrap" data-label="Date" th:text="${#temporals.format(e.date, 'dd MMM yyyy')}">01 Oct 2026</td>
+                    <td class="title-cell" data-label="Title" th:text="${e.title}">Lunch</td>
+                    <td data-label="Category"><span class="tag" th:text="${e.category.label}">Food</span></td>
+                    <td class="num" data-label="Amount" th:text="${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">12.50</td>
+                    <td class="muted" data-label="Note" th:text="${e.note}">With friends</td>
                     <td class="actions">
                         <a th:href="@{/expenses/{id}/edit(id=${e.id})}">Edit</a>
-                        <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post">
+                        <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post"
+                              th:data-confirm="|Delete '${e.title}'? This can't be undone.|">
                             <button type="submit" class="link danger">Delete</button>
                         </form>
                     </td>

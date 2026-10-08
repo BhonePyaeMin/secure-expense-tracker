@@ -1,13 +1,16 @@
 package com.example.expenses;
 
+import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.service.CsvExportService;
 import com.example.expenses.service.ExpenseNotFoundException;
 import com.example.expenses.service.ExpenseService;
 import com.example.expenses.web.ExpenseController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -15,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -25,12 +29,14 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(ExpenseController.class)
+@Import(CsvExportService.class)
 class ExpenseControllerTest {
 
     @Autowired
@@ -114,5 +120,19 @@ class ExpenseControllerTest {
         mockMvc.perform(get("/expenses").param("month", "banana"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(containsString("not a valid value for month")));
+    }
+
+    @Test
+    void exportReturnsCsvDownloadForTheFilter() throws Exception {
+        Expense lunch = new Expense("Lunch, with \"Bob\"", new BigDecimal("85.00"), Category.FOOD, LocalDate.of(2026, 10, 1), null);
+        when(expenseService.findAll(new ExpenseFilter(YearMonth.of(2026, 10), null)))
+                .thenReturn(List.of(lunch));
+
+        mockMvc.perform(get("/expenses/export").param("month", "2026-10"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "text/csv;charset=UTF-8"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"expenses-2026-10.csv\""))
+                .andExpect(content().string("\uFEFFid,title,amount,category,date,note\r\n"
+                        + "null,\"Lunch, with \"\"Bob\"\"\",85.00,FOOD,2026-10-01,\r\n"));
     }
 }

@@ -429,3 +429,98 @@ textarea.field-error {
     clip: rect(0 0 0 0);
     white-space: nowrap;
 }
+
+.head-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Small screens */
+
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem 0.75rem;
+    }
+
+    .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .site-header nav {
+        flex-wrap: wrap;
+        gap: 0.4rem 1rem;
+    }
+
+    .page-head {
+        flex-wrap: wrap;
+    }
+
+    .filters .field {
+        flex: 1 1 100%;
+    }
+
+    .field-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* Expense rows become stacked cards instead of a wide table */
+    table.cards-on-mobile thead {
+        display: none;
+    }
+
+    table.cards-on-mobile tr {
+        display: block;
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    table.cards-on-mobile tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    table.cards-on-mobile td {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.2rem 0;
+        border: 0;
+        text-align: right;
+    }
+
+    table.cards-on-mobile td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: left;
+    }
+
+    table.cards-on-mobile td:empty {
+        display: none;
+    }
+
+    table.cards-on-mobile td.title-cell {
+        font-weight: 600;
+    }
+
+    table.cards-on-mobile td.actions {
+        justify-content: flex-end;
+        padding-top: 0.4rem;
+    }
+
+    table.cards-on-mobile td.actions::before {
+        content: none;
+    }
+
+    .summary-table th,
+    .summary-table td {
+        padding: 0.5rem;
+    }
+
+    .bar-col {
+        min-width: 80px;
+    }
+}

@@ -104,7 +104,8 @@
             <li th:each="b : ${budgets}">
                 <span th:text="${b.category.label}">Food</span>
                 <span class="num" th:text="${#numbers.formatDecimal(b.monthlyLimit, 1, 'COMMA', 2, 'POINT')}">3,000.00</span>
-                <form method="post" th:action="@{/budgets/{c}/delete(c=${b.category}, month=${month})}">
+                <form method="post" th:action="@{/budgets/{c}/delete(c=${b.category}, month=${month})}"
+                      th:data-confirm="|Remove the ${b.category.label} budget?|">
                     <button type="submit" class="link danger">Remove</button>
                 </form>
             </li>
