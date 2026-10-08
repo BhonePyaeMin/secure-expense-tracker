@@ -64,7 +64,6 @@ expense-tracker/
 ├── run.bat, run.sh                        build the jar if missing, run it with low-memory JVM flags
 ├── .github/workflows/ci.yml               runs ./mvnw test
 ├── README.md, CHANGELOG.md, LICENSE
-├── CLAUDE.md
 └── src/
     ├── main/
     │   ├── java/com/example/expenses/

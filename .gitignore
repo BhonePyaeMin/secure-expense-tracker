@@ -44,3 +44,6 @@ logs/
 
 ### Local secrets ###
 .env
+
+# Local notes for the AI coding assistant (kept on this machine only)
+CLAUDE.md
