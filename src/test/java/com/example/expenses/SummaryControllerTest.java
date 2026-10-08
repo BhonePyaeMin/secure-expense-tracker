@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.DailyAllowance;
 import com.example.expenses.dto.DailySpending;
@@ -44,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SummaryController.class)
-@Import({SecurityConfig.class, MoneyFormatter.class})
+@Import({TimeConfig.class, SecurityConfig.class, MoneyFormatter.class})
 class SummaryControllerTest {
 
     private static final YearMonth OCTOBER = YearMonth.of(2026, 10);

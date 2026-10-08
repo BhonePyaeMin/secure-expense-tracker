@@ -10,22 +10,25 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.time.LocalDate;
 
 @Controller
 public class BackupController {
 
     private final BackupService backupService;
+    private final Clock clock;
 
-    public BackupController(BackupService backupService) {
+    public BackupController(BackupService backupService, Clock clock) {
         this.backupService = backupService;
+        this.clock = clock;
     }
 
     /** Downloads the signed-in user's data as a ZIP of CSV files. */
     @GetMapping("/backup")
     public void backup(@AuthenticationPrincipal AppUserDetails user, HttpServletResponse response) throws IOException {
         // Usernames only contain letters, digits, dots, dashes and underscores, so this is a safe file name
-        String filename = "expense-tracker-" + user.getUsername() + "-" + LocalDate.now() + ".zip";
+        String filename = "expense-tracker-" + user.getUsername() + "-" + LocalDate.now(clock) + ".zip";
         response.setContentType("application/zip");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 ContentDisposition.attachment().filename(filename).build().toString());

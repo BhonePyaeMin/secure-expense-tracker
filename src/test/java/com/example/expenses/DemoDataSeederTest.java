@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.model.User;
 import com.example.expenses.repository.ExpenseRepository;
@@ -32,6 +33,6 @@ class DemoDataSeederTest {
         assertThat(expenseRepository.countByOwnerId(demo.getId())).isGreaterThan(20);
         assertThat(budgetRepository.findAllByOwnerIdOrderByCategoryAsc(demo.getId())).hasSize(3);
         assertThat(expenseRepository.findAll())
-                .allSatisfy(expense -> assertThat(expense.getDate()).isBeforeOrEqualTo(LocalDate.now()));
+                .allSatisfy(expense -> assertThat(expense.getDate()).isBeforeOrEqualTo(LocalDate.now(TimeConfig.ZONE)));
     }
 }

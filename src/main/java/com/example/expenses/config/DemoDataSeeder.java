@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -76,16 +77,19 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final IncomeRepository incomeRepository;
     private final SavingsGoalRepository goalRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     public DemoDataSeeder(UserRepository userRepository, ExpenseRepository expenseRepository,
                           BudgetRepository budgetRepository, IncomeRepository incomeRepository,
-                          SavingsGoalRepository goalRepository, PasswordEncoder passwordEncoder) {
+                          SavingsGoalRepository goalRepository, PasswordEncoder passwordEncoder,
+                          Clock clock) {
         this.goalRepository = goalRepository;
         this.userRepository = userRepository;
         this.expenseRepository = expenseRepository;
         this.budgetRepository = budgetRepository;
         this.incomeRepository = incomeRepository;
         this.passwordEncoder = passwordEncoder;
+        this.clock = clock;
     }
 
     @Override
@@ -93,7 +97,7 @@ public class DemoDataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         User demo = userRepository.findByUsername(DEMO_USERNAME)
                 .orElseGet(() -> userRepository.save(new User(DEMO_USERNAME, passwordEncoder.encode(DEMO_PASSWORD))));
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         seedIncome(demo, today);
         if (goalRepository.countByOwnerId(demo.getId()) == 0) {
             goalRepository.save(new SavingsGoal(demo, "New laptop", new BigDecimal("35000.00"),

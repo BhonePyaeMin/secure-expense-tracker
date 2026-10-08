@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.model.AuditAction;
 import com.example.expenses.model.AuditEntry;
 import com.example.expenses.model.Budget;
@@ -99,7 +100,7 @@ class BackupTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "application/zip"))
                 .andExpect(header().string("Content-Disposition",
-                        "attachment; filename=\"expense-tracker-alice-" + LocalDate.now() + ".zip\""))
+                        "attachment; filename=\"expense-tracker-alice-" + LocalDate.now(TimeConfig.ZONE) + ".zip\""))
                 .andReturn();
 
         Map<String, String> files = unzip(result.getResponse().getContentAsByteArray());

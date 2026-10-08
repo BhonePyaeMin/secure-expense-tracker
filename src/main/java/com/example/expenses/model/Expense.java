@@ -1,5 +1,6 @@
 package com.example.expenses.model;
 
+import com.example.expenses.config.TimeConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,7 +17,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 @Entity
 @Table(name = "expenses",
@@ -151,9 +151,9 @@ public class Expense {
         return deletedAt;
     }
 
-    /** When it was moved to the trash, in the server's time zone, for display. */
+    /** When it was moved to the trash, in the app's time zone (Bangkok), for display. */
     public LocalDateTime getDeletedAtLocal() {
-        return deletedAt == null ? null : LocalDateTime.ofInstant(deletedAt, ZoneId.systemDefault());
+        return deletedAt == null ? null : LocalDateTime.ofInstant(deletedAt, TimeConfig.ZONE);
     }
 
     public Long getRecurringExpenseId() {

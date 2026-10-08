@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.dto.ExpenseFilter;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
@@ -45,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(ExpenseController.class)
-@Import({SecurityConfig.class, CsvExportService.class, CategorySuggester.class, MoneyFormatter.class,
+@Import({TimeConfig.class, SecurityConfig.class, CsvExportService.class, CategorySuggester.class, MoneyFormatter.class,
         QuickEntryParser.class})
 class ExpenseControllerTest {
 
@@ -79,7 +80,7 @@ class ExpenseControllerTest {
                         .param("title", "")
                         .param("amount", "12.345")
                         .param("category", "FOOD")
-                        .param("date", LocalDate.now().plusDays(1).toString())
+                        .param("date", LocalDate.now(TimeConfig.ZONE).plusDays(1).toString())
                         .param("note", "keep me"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("expenses/form"))
@@ -98,7 +99,7 @@ class ExpenseControllerTest {
                         .param("title", "Lunch")
                         .param("amount", "0")
                         .param("category", "FOOD")
-                        .param("date", LocalDate.now().toString()))
+                        .param("date", LocalDate.now(TimeConfig.ZONE).toString()))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrorCode("expenseForm", "amount", "DecimalMin"));
 
@@ -111,7 +112,7 @@ class ExpenseControllerTest {
                         .param("title", "Lunch")
                         .param("amount", "12.50")
                         .param("category", "FOOD")
-                        .param("date", LocalDate.now().toString()))
+                        .param("date", LocalDate.now(TimeConfig.ZONE).toString()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/expenses"));
 
@@ -188,13 +189,13 @@ class ExpenseControllerTest {
 
     @Test
     void repeatAddsACopyForToday() throws Exception {
-        Expense copy = new Expense(null, "Coffee", new BigDecimal("55.00"), Category.FOOD, LocalDate.now(), null);
+        Expense copy = new Expense(null, "Coffee", new BigDecimal("55.00"), Category.FOOD, LocalDate.now(TimeConfig.ZONE), null);
         when(expenseService.repeat(eq(1L), eq(7L), any())).thenReturn(copy);
 
         mockMvc.perform(post("/expenses/7/repeat").with(user(ALICE)).with(csrf()))
                 .andExpect(redirectedUrl("/expenses"));
 
-        verify(expenseService).repeat(1L, 7L, LocalDate.now());
+        verify(expenseService).repeat(1L, 7L, LocalDate.now(TimeConfig.ZONE));
     }
 
     @Test
@@ -209,7 +210,7 @@ class ExpenseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("expenseForm", org.hamcrest.Matchers.hasProperty("title",
                         org.hamcrest.Matchers.equalTo("Lunch"))))
-                .andExpect(content().string(containsString("value=\"" + LocalDate.now().minusDays(1) + "\"")))
+                .andExpect(content().string(containsString("value=\"" + LocalDate.now(TimeConfig.ZONE).minusDays(1) + "\"")))
                 .andExpect(content().string(containsString("Check the details, then save.")));
 
         verify(expenseService, org.mockito.Mockito.never()).create(any(), any());
@@ -224,7 +225,7 @@ class ExpenseControllerTest {
                         .param("title", "Bubble tea")
                         .param("amount", "60")
                         .param("category", "FOOD")
-                        .param("date", LocalDate.now().toString())
+                        .param("date", LocalDate.now(TimeConfig.ZONE).toString())
                         .param("paymentMethod", "PROMPTPAY"))
                 .andExpect(redirectedUrl("/expenses"));
 

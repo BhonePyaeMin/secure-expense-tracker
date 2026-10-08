@@ -9,6 +9,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 /**
@@ -22,9 +23,11 @@ public class RecurringExpenseScheduler {
     private static final Logger log = LoggerFactory.getLogger(RecurringExpenseScheduler.class);
 
     private final RecurringExpenseService recurringExpenseService;
+    private final Clock clock;
 
-    public RecurringExpenseScheduler(RecurringExpenseService recurringExpenseService) {
+    public RecurringExpenseScheduler(RecurringExpenseService recurringExpenseService, Clock clock) {
         this.recurringExpenseService = recurringExpenseService;
+        this.clock = clock;
     }
 
     // Every day at 00:05 by default
@@ -42,7 +45,7 @@ public class RecurringExpenseScheduler {
     // synchronized: the startup catch-up and the daily job never run at the same time in this app
     private synchronized void run() {
         try {
-            int added = recurringExpenseService.addDueExpenses(LocalDate.now());
+            int added = recurringExpenseService.addDueExpenses(LocalDate.now(clock));
             if (added > 0) {
                 log.info("Added {} recurring expense(s)", added);
             }

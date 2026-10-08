@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -19,21 +20,23 @@ public class LoginAttemptService {
     private final AuditService auditService;
     private final int maxFailedLogins;
     private final Duration lockoutDuration;
+    private final Clock clock;
 
     public LoginAttemptService(UserRepository userRepository, AuditService auditService,
                                @Value("${app.security.max-failed-logins:5}") int maxFailedLogins,
-                               @Value("${app.security.lockout-duration:15m}") Duration lockoutDuration) {
+                               @Value("${app.security.lockout-duration:15m}") Duration lockoutDuration, Clock clock) {
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.maxFailedLogins = maxFailedLogins;
         this.lockoutDuration = lockoutDuration;
+        this.clock = clock;
     }
 
     @Transactional
     public void loginFailed(String username) {
         // Unknown usernames are ignored: there is no account to lock or log against
         userRepository.findByUsername(User.normalize(username)).ifPresent(user -> {
-            if (user.recordFailedLogin(maxFailedLogins, lockoutDuration, Instant.now())) {
+            if (user.recordFailedLogin(maxFailedLogins, lockoutDuration, Instant.now(clock))) {
                 auditService.record(user.getId(), AuditAction.ACCOUNT_LOCKED,
                         "Locked for " + lockoutDuration.toMinutes() + " minutes after "
                                 + maxFailedLogins + " wrong passwords in a row");

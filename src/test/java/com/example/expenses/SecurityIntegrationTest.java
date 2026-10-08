@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.model.AuditAction;
 import com.example.expenses.model.AuditEntry;
 import com.example.expenses.model.Category;
@@ -73,9 +74,9 @@ class SecurityIntegrationTest {
     void setUp() {
         alice = userRepository.save(new User("alice", passwordEncoder.encode("alice-password")));
         User bob = userRepository.save(new User("bob", passwordEncoder.encode("bob-password")));
-        expenseRepository.save(new Expense(alice, "Alice groceries", new BigDecimal("300.00"), Category.FOOD, LocalDate.now(), null));
+        expenseRepository.save(new Expense(alice, "Alice groceries", new BigDecimal("300.00"), Category.FOOD, LocalDate.now(TimeConfig.ZONE), null));
         bobsExpense = expenseRepository.save(
-                new Expense(bob, "Bob secret dinner", new BigDecimal("85.00"), Category.FOOD, LocalDate.now(), "private note"));
+                new Expense(bob, "Bob secret dinner", new BigDecimal("85.00"), Category.FOOD, LocalDate.now(TimeConfig.ZONE), "private note"));
     }
 
     private AppUserDetails signedInAlice() {
@@ -105,7 +106,7 @@ class SecurityIntegrationTest {
                         .param("title", "Hacked")
                         .param("amount", "1.00")
                         .param("category", "FUN")
-                        .param("date", LocalDate.now().toString()))
+                        .param("date", LocalDate.now(TimeConfig.ZONE).toString()))
                 .andExpect(status().isNotFound());
 
         assertThat(expenseRepository.findById(bobsExpense.getId()))
@@ -226,7 +227,7 @@ class SecurityIntegrationTest {
                         .param("title", "Phone plan")
                         .param("amount", "399.00")
                         .param("category", "OTHER")
-                        .param("firstDate", LocalDate.now().toString()))
+                        .param("firstDate", LocalDate.now(TimeConfig.ZONE).toString()))
                 .andExpect(redirectedUrl("/recurring"));
 
         mockMvc.perform(get("/recurring").with(user(signedInAlice())))
@@ -243,7 +244,7 @@ class SecurityIntegrationTest {
                         .param("title", "Old thing")
                         .param("amount", "10.00")
                         .param("category", "OTHER")
-                        .param("firstDate", LocalDate.now().minusYears(2).toString()))
+                        .param("firstDate", LocalDate.now(TimeConfig.ZONE).minusYears(2).toString()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("at most one year ago")));
     }
@@ -281,14 +282,14 @@ class SecurityIntegrationTest {
     @Test
     void repeatCopiesYourExpenseWithTodaysDateButNotSomeoneElses() throws Exception {
         Expense groceries = expenseRepository.save(new Expense(alice, "Weekly groceries", new BigDecimal("410.00"),
-                Category.FOOD, LocalDate.now().minusDays(7), "Market"));
+                Category.FOOD, LocalDate.now(TimeConfig.ZONE).minusDays(7), "Market"));
 
         mockMvc.perform(post("/expenses/{id}/repeat", groceries.getId()).with(user(signedInAlice())).with(csrf()))
                 .andExpect(redirectedUrl("/expenses"));
 
         assertThat(expenseRepository.findAll()).filteredOn(e -> e.getTitle().equals("Weekly groceries"))
                 .extracting(Expense::getDate)
-                .containsExactlyInAnyOrder(LocalDate.now().minusDays(7), LocalDate.now());
+                .containsExactlyInAnyOrder(LocalDate.now(TimeConfig.ZONE).minusDays(7), LocalDate.now(TimeConfig.ZONE));
 
         mockMvc.perform(post("/expenses/{id}/repeat", bobsExpense.getId()).with(user(signedInAlice())).with(csrf()))
                 .andExpect(status().isNotFound());
@@ -299,7 +300,7 @@ class SecurityIntegrationTest {
     @Test
     void insightsComparesYourOwnSpendingWithLastMonth() throws Exception {
         expenseRepository.save(new Expense(alice, "Last month groceries", new BigDecimal("200.00"), Category.FOOD,
-                LocalDate.now().minusMonths(1).withDayOfMonth(1), null));
+                LocalDate.now(TimeConfig.ZONE).minusMonths(1).withDayOfMonth(1), null));
 
         mockMvc.perform(get("/insights").with(user(signedInAlice())))
                 .andExpect(status().isOk())
@@ -319,7 +320,7 @@ class SecurityIntegrationTest {
         mockMvc.perform(post("/income").with(user(signedInAlice())).with(csrf())
                         .param("source", "Alice tutoring")
                         .param("amount", "1000.00")
-                        .param("date", LocalDate.now().toString()))
+                        .param("date", LocalDate.now(TimeConfig.ZONE).toString()))
                 .andExpect(status().is3xxRedirection());
 
         // Alice spent 300.00 this month, so her balance is 700.00
@@ -345,7 +346,7 @@ class SecurityIntegrationTest {
                 .param("title", "Coffee")
                 .param("amount", "55.00")
                 .param("category", "FOOD")
-                .param("date", LocalDate.now().toString()));
+                .param("date", LocalDate.now(TimeConfig.ZONE).toString()));
         Expense coffee = expenseRepository.findAll().stream()
                 .filter(e -> e.getTitle().equals("Coffee")).findFirst().orElseThrow();
 
@@ -353,7 +354,7 @@ class SecurityIntegrationTest {
                 .param("title", "Coffee")
                 .param("amount", "60.00")
                 .param("category", "FOOD")
-                .param("date", LocalDate.now().toString()));
+                .param("date", LocalDate.now(TimeConfig.ZONE).toString()));
         mockMvc.perform(post("/expenses/{id}/delete", coffee.getId()).with(user(signedInAlice())).with(csrf()));
 
         assertThat(auditActionsFor(alice)).containsSequence(

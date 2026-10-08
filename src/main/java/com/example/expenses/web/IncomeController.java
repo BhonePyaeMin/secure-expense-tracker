@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -24,18 +25,20 @@ public class IncomeController {
     private static final String VIEW = "income";
 
     private final IncomeService incomeService;
+    private final Clock clock;
 
-    public IncomeController(IncomeService incomeService) {
+    public IncomeController(IncomeService incomeService, Clock clock) {
         this.incomeService = incomeService;
+        this.clock = clock;
     }
 
     @GetMapping("/income")
     public String list(@AuthenticationPrincipal AppUserDetails user,
                        @RequestParam(required = false) YearMonth month, Model model) {
         IncomeForm form = new IncomeForm();
-        form.setDate(LocalDate.now());
+        form.setDate(LocalDate.now(clock));
         model.addAttribute("incomeForm", form);
-        addMonth(model, user.getId(), month != null ? month : YearMonth.now());
+        addMonth(model, user.getId(), month != null ? month : YearMonth.now(clock));
         return VIEW;
     }
 
@@ -44,7 +47,7 @@ public class IncomeController {
                       @Valid @ModelAttribute("incomeForm") IncomeForm form, BindingResult result,
                       Model model, RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            addMonth(model, user.getId(), form.getDate() != null ? YearMonth.from(form.getDate()) : YearMonth.now());
+            addMonth(model, user.getId(), form.getDate() != null ? YearMonth.from(form.getDate()) : YearMonth.now(clock));
             return VIEW;
         }
         incomeService.add(user.getId(), form);

@@ -1,5 +1,6 @@
 package com.example.expenses.model;
 
+import com.example.expenses.config.TimeConfig;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,7 +11,6 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 /** One line of the audit log: who did what, and when. Entries are only ever added, never changed. */
 @Entity
@@ -65,8 +65,8 @@ public class AuditEntry {
         return createdAt;
     }
 
-    /** The timestamp in the server's time zone, for display. */
+    /** The timestamp in the app's time zone (Bangkok), for display. */
     public LocalDateTime getLocalTime() {
-        return LocalDateTime.ofInstant(createdAt, ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(createdAt, TimeConfig.ZONE);
     }
 }

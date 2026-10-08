@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /** Loads users for form login. Spring Security checks the BCrypt hash and the locked flag. */
@@ -15,9 +16,11 @@ import java.time.Instant;
 public class AppUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final Clock clock;
 
-    public AppUserDetailsService(UserRepository userRepository) {
+    public AppUserDetailsService(UserRepository userRepository, Clock clock) {
         this.userRepository = userRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -26,6 +29,6 @@ public class AppUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(User.normalize(username))
                 .orElseThrow(() -> new UsernameNotFoundException("Unknown user"));
         return new AppUserDetails(user.getId(), user.getUsername(), user.getPasswordHash(),
-                user.isLocked(Instant.now()));
+                user.isLocked(Instant.now(clock)));
     }
 }

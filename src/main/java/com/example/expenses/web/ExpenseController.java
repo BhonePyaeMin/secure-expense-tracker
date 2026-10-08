@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -49,13 +50,15 @@ public class ExpenseController {
     private final CsvExportService csvExportService;
     private final CategorySuggester categorySuggester;
     private final QuickEntryParser quickEntryParser;
+    private final Clock clock;
 
     public ExpenseController(ExpenseService expenseService, CsvExportService csvExportService,
-                             CategorySuggester categorySuggester, QuickEntryParser quickEntryParser) {
+                             CategorySuggester categorySuggester, QuickEntryParser quickEntryParser, Clock clock) {
         this.expenseService = expenseService;
         this.csvExportService = csvExportService;
         this.categorySuggester = categorySuggester;
         this.quickEntryParser = quickEntryParser;
+        this.clock = clock;
     }
 
     @ModelAttribute("categories")
@@ -130,12 +133,12 @@ public class ExpenseController {
         ExpenseForm form;
         if (StringUtils.hasText(quick)) {
             String text = quick.length() > 200 ? quick.substring(0, 200) : quick;
-            form = quickEntryParser.parse(text, LocalDate.now());
+            form = quickEntryParser.parse(text, LocalDate.now(clock));
             expenseService.lastCategoryFor(user.getId(), form.getTitle()).ifPresent(form::setCategory);
             model.addAttribute("quickText", text);
         } else {
             form = new ExpenseForm();
-            form.setDate(LocalDate.now());
+            form.setDate(LocalDate.now(clock));
         }
         form.setPaymentMethod(PaymentMethod.CASH); // the most common; easy to change
         model.addAttribute("expenseForm", form);
@@ -177,7 +180,7 @@ public class ExpenseController {
     @PostMapping("/expenses/{id}/repeat")
     public String repeat(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id,
                          RedirectAttributes redirectAttributes) {
-        Expense copy = expenseService.repeat(user.getId(), id, LocalDate.now());
+        Expense copy = expenseService.repeat(user.getId(), id, LocalDate.now(clock));
         redirectAttributes.addFlashAttribute("message", "Added \"" + copy.getTitle() + "\" again for today.");
         return "redirect:/expenses";
     }

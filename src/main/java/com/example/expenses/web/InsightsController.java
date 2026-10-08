@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -15,15 +16,17 @@ import java.time.YearMonth;
 public class InsightsController {
 
     private final InsightsService insightsService;
+    private final Clock clock;
 
-    public InsightsController(InsightsService insightsService) {
+    public InsightsController(InsightsService insightsService, Clock clock) {
         this.insightsService = insightsService;
+        this.clock = clock;
     }
 
     @GetMapping("/insights")
     public String insights(@AuthenticationPrincipal AppUserDetails user,
                            @RequestParam(required = false) YearMonth month, Model model) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         YearMonth selected = month != null ? month : YearMonth.from(today);
         model.addAttribute("month", selected);
         model.addAttribute("comparison", insightsService.compareWithPreviousMonth(user.getId(), selected, today));

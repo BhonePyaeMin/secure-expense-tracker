@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 @Controller
@@ -26,10 +27,12 @@ public class GoalsController {
 
     private final SavingsGoalService goalService;
     private final MoneyFormatter money;
+    private final Clock clock;
 
-    public GoalsController(SavingsGoalService goalService, MoneyFormatter money) {
+    public GoalsController(SavingsGoalService goalService, MoneyFormatter money, Clock clock) {
         this.goalService = goalService;
         this.money = money;
+        this.clock = clock;
     }
 
     @GetMapping("/goals")
@@ -92,7 +95,7 @@ public class GoalsController {
 
     private void addGoals(Model model, Long userId) {
         model.addAttribute("goals", goalService.findAll(userId));
-        model.addAttribute("today", LocalDate.now());
+        model.addAttribute("today", LocalDate.now(clock));
     }
 
     private static String withError(BindingResult result, RedirectAttributes redirectAttributes) {

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Clock;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,12 +34,14 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final Clock clock;
 
     public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository,
-                          AuditService auditService) {
+                          AuditService auditService, Clock clock) {
         this.expenseRepository = expenseRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.clock = clock;
     }
 
     public Page<Expense> search(Long userId, ExpenseFilter filter, Pageable pageable) {
@@ -127,7 +130,7 @@ public class ExpenseService {
     @Transactional
     public void delete(Long userId, Long id) {
         Expense expense = findOwned(userId, id);
-        expense.moveToTrash(Instant.now());
+        expense.moveToTrash(Instant.now(clock));
         auditService.record(userId, AuditAction.EXPENSE_DELETED, describe(expense));
     }
 

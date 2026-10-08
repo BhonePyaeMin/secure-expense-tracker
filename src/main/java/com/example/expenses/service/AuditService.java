@@ -8,21 +8,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 
 @Service
 public class AuditService {
 
     private final AuditEntryRepository auditEntryRepository;
+    private final Clock clock;
 
-    public AuditService(AuditEntryRepository auditEntryRepository) {
+    public AuditService(AuditEntryRepository auditEntryRepository, Clock clock) {
         this.auditEntryRepository = auditEntryRepository;
+        this.clock = clock;
     }
 
     /** Joins the caller's transaction, so the log entry is saved only if the change itself is saved. */
     @Transactional
     public void record(Long userId, AuditAction action, String details) {
-        auditEntryRepository.save(new AuditEntry(userId, action, truncate(details), Instant.now()));
+        auditEntryRepository.save(new AuditEntry(userId, action, truncate(details), Instant.now(clock)));
     }
 
     @Transactional(readOnly = true)

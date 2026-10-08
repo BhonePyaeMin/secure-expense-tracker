@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
@@ -30,12 +31,14 @@ public class SummaryController {
     private final SummaryService summaryService;
     private final BudgetService budgetService;
     private final InsightsService insightsService;
+    private final Clock clock;
 
     public SummaryController(SummaryService summaryService, BudgetService budgetService,
-                             InsightsService insightsService) {
+                             InsightsService insightsService, Clock clock) {
         this.summaryService = summaryService;
         this.budgetService = budgetService;
         this.insightsService = insightsService;
+        this.clock = clock;
     }
 
     @ModelAttribute("categories")
@@ -75,12 +78,12 @@ public class SummaryController {
     }
 
     private void addSummary(Model model, Long userId, YearMonth month) {
-        YearMonth selected = month != null ? month : YearMonth.now();
+        YearMonth selected = month != null ? month : YearMonth.now(clock);
         MonthlySummary summary = summaryService.summarize(userId, selected);
         model.addAttribute("summary", summary);
         model.addAttribute("balance", summaryService.balance(userId, summary));
-        model.addAttribute("allowance", summaryService.dailyAllowance(summary, LocalDate.now()).orElse(null));
-        model.addAttribute("pace", insightsService.pace(userId, selected, LocalDate.now()).orElse(null));
+        model.addAttribute("allowance", summaryService.dailyAllowance(summary, LocalDate.now(clock)).orElse(null));
+        model.addAttribute("pace", insightsService.pace(userId, selected, LocalDate.now(clock)).orElse(null));
         model.addAttribute("daily", summaryService.dailySpending(userId, selected));
         model.addAttribute("payments", summaryService.paymentTotals(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));

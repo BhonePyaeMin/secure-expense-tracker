@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 @Controller
@@ -25,9 +26,11 @@ public class RecurringController {
     private static final String REDIRECT = "redirect:/recurring";
 
     private final RecurringExpenseService recurringExpenseService;
+    private final Clock clock;
 
-    public RecurringController(RecurringExpenseService recurringExpenseService) {
+    public RecurringController(RecurringExpenseService recurringExpenseService, Clock clock) {
         this.recurringExpenseService = recurringExpenseService;
+        this.clock = clock;
     }
 
     @ModelAttribute("categories")
@@ -43,7 +46,7 @@ public class RecurringController {
     @GetMapping("/recurring")
     public String list(@AuthenticationPrincipal AppUserDetails user, Model model) {
         RecurringForm form = new RecurringForm();
-        form.setFirstDate(LocalDate.now());
+        form.setFirstDate(LocalDate.now(clock));
         model.addAttribute("recurringForm", form);
         model.addAttribute("recurring", recurringExpenseService.findAll(user.getId()));
         return VIEW;
@@ -53,7 +56,7 @@ public class RecurringController {
     public String create(@AuthenticationPrincipal AppUserDetails user,
                          @Valid @ModelAttribute("recurringForm") RecurringForm form, BindingResult result,
                          Model model, RedirectAttributes redirectAttributes) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (form.getFirstDate() != null && form.getFirstDate().isBefore(today.minusYears(1))) {
             result.rejectValue("firstDate", "tooOld", "First date can be at most one year ago");
         }
@@ -80,7 +83,7 @@ public class RecurringController {
     @PostMapping("/recurring/{id}/resume")
     public String resume(@AuthenticationPrincipal AppUserDetails user, @PathVariable Long id,
                          RedirectAttributes redirectAttributes) {
-        int added = recurringExpenseService.resume(user.getId(), id, LocalDate.now());
+        int added = recurringExpenseService.resume(user.getId(), id, LocalDate.now(clock));
         redirectAttributes.addFlashAttribute("message", "Resumed." + addedMessage(added));
         return REDIRECT;
     }

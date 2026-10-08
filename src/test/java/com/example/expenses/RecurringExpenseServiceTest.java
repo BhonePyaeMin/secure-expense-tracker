@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.dto.RecurringForm;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
-@Import({RecurringExpenseService.class, AuditService.class})
+@Import({RecurringExpenseService.class, AuditService.class, TimeConfig.class})
 class RecurringExpenseServiceTest {
 
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 8);

@@ -1,5 +1,6 @@
 package com.example.expenses;
 
+import com.example.expenses.config.TimeConfig;
 import com.example.expenses.model.AuditAction;
 import com.example.expenses.model.AuditEntry;
 import com.example.expenses.model.Category;
@@ -62,7 +63,7 @@ class TrashTest {
         alice = new AppUserDetails(aliceUser.getId(), "alice", "unused", false);
         bob = new AppUserDetails(bobUser.getId(), "bob", "unused", false);
         concert = expenseRepository.save(new Expense(aliceUser, "Concert ticket", new BigDecimal("1200.00"),
-                Category.FUN, LocalDate.now(), null));
+                Category.FUN, LocalDate.now(TimeConfig.ZONE), null));
     }
 
     @Test
