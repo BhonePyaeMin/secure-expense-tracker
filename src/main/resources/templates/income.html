@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <title>Income · Expense Tracker</title>
+</head>
+<body>
+<main class="container">
+    <div class="page-head">
+        <h1 th:text="|Income for ${#temporals.format(month.atDay(1), 'MMMM yyyy')}|">Income for October 2026</h1>
+    </div>
+
+    <p class="flash" th:if="${message}" th:text="${message}">Income added.</p>
+
+    <form class="filters" method="get" th:action="@{/income}">
+        <a th:href="@{/income(month=${month.minusMonths(1)})}">&larr; Previous</a>
+        <div class="field">
+            <label for="month">Month</label>
+            <input type="month" id="month" name="month" th:value="${month}" required>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="button">Show</button>
+            <a th:href="@{/income(month=${month.plusMonths(1)})}">Next &rarr;</a>
+        </div>
+    </form>
+
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-label">Total income</span>
+            <span class="stat-value" th:text="${@money.format(total)}">฿14,000.00</span>
+        </div>
+    </div>
+
+    <p class="empty" th:if="${incomes.isEmpty()}">No income recorded for this month.</p>
+
+    <div class="table-wrap" th:unless="${incomes.isEmpty()}">
+        <table class="cards-on-mobile">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Source</th>
+                <th class="num">Amount</th>
+                <th><span class="sr-only">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="i : ${incomes}">
+                <td class="nowrap" data-label="Date" th:text="${#temporals.format(i.date, 'dd MMM yyyy')}">01 Oct 2026</td>
+                <td class="title-cell" data-label="Source" th:text="${i.source}">Part-time job</td>
+                <td class="num" data-label="Amount" th:text="${@money.format(i.amount)}">฿6,000.00</td>
+                <td class="actions">
+                    <form method="post" th:action="@{/income/{id}/delete(id=${i.id}, month=${month})}"
+                          th:data-confirm="|Delete '${i.source}'?|">
+                        <button type="submit" class="link danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <section class="budgets">
+        <h2>Add income</h2>
+        <form class="form" method="post" th:action="@{/income}" th:object="${incomeForm}">
+            <div class="field">
+                <label for="source">Source</label>
+                <input type="text" th:field="*{source}" th:errorclass="field-error" maxlength="100" required
+                       list="income-sources" placeholder="e.g. Part-time job">
+                <datalist id="income-sources">
+                    <option th:each="s : ${sources}" th:value="${s}"></option>
+                </datalist>
+                <p class="error" th:if="${#fields.hasErrors('source')}" th:errors="*{source}">Error</p>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="amount" th:text="|Amount (${@money.symbol})|">Amount</label>
+                    <input type="number" th:field="*{amount}" th:errorclass="field-error" step="0.01" min="0.01"
+                           inputmode="decimal" required>
+                    <p class="error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="date">Date</label>
+                    <input type="date" th:field="*{date}" th:errorclass="field-error" required>
+                    <p class="error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}">Error</p>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="button">Add income</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

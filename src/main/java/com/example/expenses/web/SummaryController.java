@@ -1,6 +1,7 @@
 package com.example.expenses.web;
 
 import com.example.expenses.dto.BudgetForm;
+import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Category;
 import com.example.expenses.security.AppUserDetails;
 import com.example.expenses.service.BudgetService;
@@ -70,7 +71,9 @@ public class SummaryController {
 
     private void addSummary(Model model, Long userId, YearMonth month) {
         YearMonth selected = month != null ? month : YearMonth.now();
-        model.addAttribute("summary", summaryService.summarize(userId, selected));
+        MonthlySummary summary = summaryService.summarize(userId, selected);
+        model.addAttribute("summary", summary);
+        model.addAttribute("balance", summaryService.balance(userId, summary));
         model.addAttribute("daily", summaryService.dailySpending(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));
     }

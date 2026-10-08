@@ -7,6 +7,7 @@ import com.example.expenses.model.Expense;
 import com.example.expenses.model.User;
 import com.example.expenses.repository.AuditEntryRepository;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.IncomeRepository;
 import com.example.expenses.repository.UserRepository;
 import com.example.expenses.security.AppUserDetails;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,9 @@ class SecurityIntegrationTest {
 
     @Autowired
     private AuditEntryRepository auditEntryRepository;
+
+    @Autowired
+    private IncomeRepository incomeRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -270,6 +274,31 @@ class SecurityIntegrationTest {
                 .andExpect(content().string(containsString("Row 3: Amount must be greater than 0")));
 
         assertThat(expenseRepository.count()).isEqualTo(before);
+    }
+
+    // --- Income ---
+
+    @Test
+    void incomeShowsUpInTheBalanceAndIsPrivate() throws Exception {
+        mockMvc.perform(post("/income").with(user(signedInAlice())).with(csrf())
+                        .param("source", "Alice tutoring")
+                        .param("amount", "1000.00")
+                        .param("date", LocalDate.now().toString()))
+                .andExpect(status().is3xxRedirection());
+
+        // Alice spent 300.00 this month, so her balance is 700.00
+        mockMvc.perform(get("/summary").with(user(signedInAlice())))
+                .andExpect(content().string(containsString("฿1,000.00")))
+                .andExpect(content().string(containsString("฿700.00")));
+
+        Long incomeId = incomeRepository.findAll().get(0).getId();
+        AppUserDetails bob = new AppUserDetails(userRepository.findByUsername("bob").orElseThrow().getId(),
+                "bob", "unused", false);
+        mockMvc.perform(get("/income").with(user(bob)))
+                .andExpect(content().string(not(containsString("Alice tutoring"))));
+        mockMvc.perform(post("/income/{id}/delete", incomeId).with(user(bob)).with(csrf()))
+                .andExpect(status().isNotFound());
+        assertThat(incomeRepository.findById(incomeId)).isPresent();
     }
 
     // --- Audit log ---

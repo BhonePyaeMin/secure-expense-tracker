@@ -1,8 +1,8 @@
 package com.example.expenses.service;
 
-public class RecurringExpenseNotFoundException extends RuntimeException {
+public class RecurringExpenseNotFoundException extends NotFoundException {
 
     public RecurringExpenseNotFoundException(Long id) {
-        super("Recurring expense " + id + " not found");
+        super("Recurring expense", id);
     }
 }

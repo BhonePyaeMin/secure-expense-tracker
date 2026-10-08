@@ -11,6 +11,8 @@ public enum AuditAction {
     EXPENSES_IMPORTED("Expenses imported"),
     BUDGET_SET("Budget set"),
     BUDGET_REMOVED("Budget removed"),
+    INCOME_ADDED("Income added"),
+    INCOME_DELETED("Income deleted"),
     RECURRING_CREATED("Recurring expense set up"),
     RECURRING_PAUSED("Recurring expense paused"),
     RECURRING_RESUMED("Recurring expense resumed"),

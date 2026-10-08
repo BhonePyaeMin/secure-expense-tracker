@@ -4,11 +4,13 @@ import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
+import com.example.expenses.dto.MonthlyBalance;
 import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.IncomeRepository;
 import com.example.expenses.service.SummaryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,9 @@ class SummaryServiceTest {
 
     private final ExpenseRepository expenseRepository = mock(ExpenseRepository.class);
     private final BudgetRepository budgetRepository = mock(BudgetRepository.class);
-    private final SummaryService summaryService = new SummaryService(expenseRepository, budgetRepository);
+    private final IncomeRepository incomeRepository = mock(IncomeRepository.class);
+    private final SummaryService summaryService =
+            new SummaryService(expenseRepository, budgetRepository, incomeRepository);
 
     @BeforeEach
     void noBudgetsByDefault() {
@@ -137,6 +141,31 @@ class SummaryServiceTest {
 
         assertThat(daily.days()).hasSize(28);
         assertThat(daily.hasSpending()).isFalse();
+    }
+
+    @Test
+    void balanceIsIncomeMinusSpending() {
+        givenTotals(new CategoryTotal(Category.FOOD, new BigDecimal("1246.50")));
+        when(incomeRepository.totalBetween(USER_ID, LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)))
+                .thenReturn(new BigDecimal("8000"));
+
+        MonthlyBalance balance = summaryService.balance(USER_ID, summaryService.summarize(USER_ID, OCTOBER));
+
+        assertThat(balance.income()).isEqualByComparingTo("8000.00");
+        assertThat(balance.spent()).isEqualByComparingTo("1246.50");
+        assertThat(balance.balance()).isEqualByComparingTo("6753.50");
+        assertThat(balance.isNegative()).isFalse();
+    }
+
+    @Test
+    void noIncomeMeansANegativeBalance() {
+        givenTotals(new CategoryTotal(Category.FOOD, new BigDecimal("100")));
+
+        MonthlyBalance balance = summaryService.balance(USER_ID, summaryService.summarize(USER_ID, OCTOBER));
+
+        assertThat(balance.income()).isEqualByComparingTo("0");
+        assertThat(balance.balance()).isEqualByComparingTo("-100");
+        assertThat(balance.isNegative()).isTrue();
     }
 
     private void givenTotals(CategoryTotal... totals) {

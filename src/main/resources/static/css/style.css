@@ -315,6 +315,11 @@ h2 {
     font-variant-numeric: tabular-nums;
 }
 
+.stat-note {
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+}
+
 .stat-warning {
     border-color: var(--danger);
 }

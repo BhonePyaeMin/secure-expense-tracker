@@ -4,11 +4,13 @@ import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
+import com.example.expenses.dto.MonthlyBalance;
 import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.IncomeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +33,13 @@ public class SummaryService {
 
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
+    private final IncomeRepository incomeRepository;
 
-    public SummaryService(ExpenseRepository expenseRepository, BudgetRepository budgetRepository) {
+    public SummaryService(ExpenseRepository expenseRepository, BudgetRepository budgetRepository,
+                          IncomeRepository incomeRepository) {
         this.expenseRepository = expenseRepository;
         this.budgetRepository = budgetRepository;
+        this.incomeRepository = incomeRepository;
     }
 
     public MonthlySummary summarize(Long userId, YearMonth month) {
@@ -67,6 +72,14 @@ public class SummaryService {
                 .toList();
 
         return new MonthlySummary(month, totalSpent, rows);
+    }
+
+    /** Income minus spending for the summary's month. */
+    public MonthlyBalance balance(Long userId, MonthlySummary summary) {
+        YearMonth month = summary.month();
+        BigDecimal income = incomeRepository.totalBetween(userId, month.atDay(1), month.atEndOfMonth());
+        income = money(income == null ? BigDecimal.ZERO : income);
+        return new MonthlyBalance(income, summary.totalSpent(), income.subtract(summary.totalSpent()));
     }
 
     /** Spending for every day of the month, with zero for days without expenses (for the chart). */

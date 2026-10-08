@@ -3,6 +3,7 @@ package com.example.expenses;
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
+import com.example.expenses.dto.MonthlyBalance;
 import com.example.expenses.dto.MonthlySummary;
 import com.example.expenses.model.Category;
 import com.example.expenses.security.AppUserDetails;
@@ -58,6 +59,8 @@ class SummaryControllerTest {
     @BeforeEach
     void noDailySpendingByDefault() {
         when(summaryService.dailySpending(anyLong(), any())).thenReturn(new DailySpending(OCTOBER, List.of()));
+        when(summaryService.balance(anyLong(), any()))
+                .thenReturn(new MonthlyBalance(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
     }
 
     @Test

@@ -3,9 +3,11 @@ package com.example.expenses.config;
 import com.example.expenses.model.Budget;
 import com.example.expenses.model.Category;
 import com.example.expenses.model.Expense;
+import com.example.expenses.model.Income;
 import com.example.expenses.model.User;
 import com.example.expenses.repository.BudgetRepository;
 import com.example.expenses.repository.ExpenseRepository;
+import com.example.expenses.repository.IncomeRepository;
 import com.example.expenses.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,13 +70,16 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final UserRepository userRepository;
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
+    private final IncomeRepository incomeRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DemoDataSeeder(UserRepository userRepository, ExpenseRepository expenseRepository,
-                          BudgetRepository budgetRepository, PasswordEncoder passwordEncoder) {
+                          BudgetRepository budgetRepository, IncomeRepository incomeRepository,
+                          PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.expenseRepository = expenseRepository;
         this.budgetRepository = budgetRepository;
+        this.incomeRepository = incomeRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -83,11 +88,12 @@ public class DemoDataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         User demo = userRepository.findByUsername(DEMO_USERNAME)
                 .orElseGet(() -> userRepository.save(new User(DEMO_USERNAME, passwordEncoder.encode(DEMO_PASSWORD))));
+        LocalDate today = LocalDate.now();
+        seedIncome(demo, today);
         if (expenseRepository.countByOwnerId(demo.getId()) > 0) {
             log.info("Demo profile: demo account already has data, skipping seed");
             return;
         }
-        LocalDate today = LocalDate.now();
         List<Expense> expenses = new ArrayList<>();
         for (Object[] sample : SAMPLES) {
             expenses.add(new Expense(demo, (String) sample[1], new BigDecimal((String) sample[2]),
@@ -100,5 +106,18 @@ public class DemoDataSeeder implements ApplicationRunner {
                 new Budget(demo, Category.FUN, new BigDecimal("500.00"))));
         log.info("Demo profile: seeded {} expenses and 3 budgets. Sign in as {} / {}",
                 expenses.size(), DEMO_USERNAME, DEMO_PASSWORD);
+    }
+
+    // Separate from the expenses so a demo database from before income existed gets some too
+    private void seedIncome(User demo, LocalDate today) {
+        if (incomeRepository.countByOwnerId(demo.getId()) > 0) {
+            return;
+        }
+        LocalDate thisMonth = today.withDayOfMonth(1);
+        LocalDate lastMonth = thisMonth.minusMonths(1);
+        incomeRepository.saveAll(List.of(
+                new Income(demo, new BigDecimal("8000.00"), "Allowance from parents", lastMonth),
+                new Income(demo, new BigDecimal("4500.00"), "Part-time job", lastMonth.plusDays(14)),
+                new Income(demo, new BigDecimal("8000.00"), "Allowance from parents", thisMonth)));
     }
 }

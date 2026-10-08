@@ -26,9 +26,18 @@
 
     <div class="stats">
         <div class="stat">
-            <span class="stat-label">Total spent</span>
+            <span class="stat-label">Income</span>
+            <span class="stat-value" th:text="${@money.format(balance.income())}">฿14,000.00</span>
+            <a class="stat-note" th:href="@{/income(month=${month})}">Add or view income</a>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Spent</span>
             <span class="stat-value"
                   th:text="${@money.format(summary.totalSpent())}">1,234.50</span>
+        </div>
+        <div class="stat" th:classappend="${balance.isNegative()} ? 'stat-warning'">
+            <span class="stat-label">Balance (income minus spent)</span>
+            <span class="stat-value" th:text="${@money.format(balance.balance())}">฿12,753.50</span>
         </div>
         <div class="stat" th:classappend="${summary.overBudgetCount() > 0} ? 'stat-warning'">
             <span class="stat-label">Over budget</span>
