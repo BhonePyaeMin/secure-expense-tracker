@@ -1,6 +1,7 @@
 package com.example.expenses;
 
 import com.example.expenses.dto.CategorySummary;
+import com.example.expenses.dto.DailyAllowance;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlyBalance;
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,6 +78,21 @@ class SummaryControllerTest {
                 .andExpect(content().string(containsString("data-amounts=\"0.00,65.00\"")))
                 .andExpect(content().string(containsString("Show as a table")))
                 .andExpect(content().string(containsString("integrity=\"sha512-")));
+    }
+
+    @Test
+    void negativeDailyAllowanceIsShownInRed() throws Exception {
+        MonthlySummary summary = new MonthlySummary(OCTOBER, new BigDecimal("3500.00"), List.of());
+        when(summaryService.summarize(1L, OCTOBER)).thenReturn(summary);
+        when(summaryService.dailyAllowance(any(), any())).thenReturn(Optional.of(
+                new DailyAllowance(new BigDecimal("-500.00"), 2, new BigDecimal("-250.00"))));
+
+        mockMvc.perform(get("/summary").param("month", "2026-10").with(user(ALICE)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("-฿250.00 / day")))
+                .andExpect(content().string(containsString("Over your budgets by ฿500.00")))
+                .andExpect(content().string(org.hamcrest.Matchers.matchesPattern(
+                        "(?s).*class=\"stat stat-warning\">\\s*<span class=\"stat-label\">Daily allowance.*")));
     }
 
     @Test

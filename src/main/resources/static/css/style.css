@@ -324,7 +324,8 @@ h2 {
     border-color: var(--danger);
 }
 
-.stat-warning .stat-value {
+.stat-warning .stat-value,
+.stat-warning .stat-note {
     color: var(--danger);
 }
 

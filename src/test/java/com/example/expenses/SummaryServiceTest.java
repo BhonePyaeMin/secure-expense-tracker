@@ -2,6 +2,7 @@ package com.example.expenses;
 
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
+import com.example.expenses.dto.DailyAllowance;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlyBalance;
@@ -166,6 +167,106 @@ class SummaryServiceTest {
         assertThat(balance.income()).isEqualByComparingTo("0");
         assertThat(balance.balance()).isEqualByComparingTo("-100");
         assertThat(balance.isNegative()).isTrue();
+    }
+
+    // --- Daily allowance: remaining budget / days left (today included) ---
+
+    @Test
+    void allowanceSplitsWhatIsLeftOverTheDaysLeft() {
+        MonthlySummary summary = summaryOf(budgetRow(Category.FOOD, "1000", "3000"),
+                budgetRow(Category.TRANSPORT, "500", "1000"));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(summary, LocalDate.of(2026, 10, 22)).orElseThrow();
+
+        assertThat(allowance.remaining()).isEqualByComparingTo("2500");
+        assertThat(allowance.daysLeft()).isEqualTo(10); // 22nd to 31st
+        assertThat(allowance.perDay()).isEqualByComparingTo("250.00");
+        assertThat(allowance.isNegative()).isFalse();
+    }
+
+    @Test
+    void overspendingMakesTheAllowanceNegative() {
+        MonthlySummary summary = summaryOf(budgetRow(Category.FOOD, "3500", "3000"));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(summary, LocalDate.of(2026, 10, 30)).orElseThrow();
+
+        assertThat(allowance.daysLeft()).isEqualTo(2);
+        assertThat(allowance.perDay()).isEqualByComparingTo("-250.00");
+        assertThat(allowance.isNegative()).isTrue();
+    }
+
+    @Test
+    void oneCategoryOverIsOffsetByTheOthers() {
+        MonthlySummary summary = summaryOf(budgetRow(Category.FOOD, "3200", "3000"),
+                budgetRow(Category.FUN, "0", "1000"));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(summary, LocalDate.of(2026, 10, 31)).orElseThrow();
+
+        assertThat(allowance.remaining()).isEqualByComparingTo("800");
+        assertThat(allowance.daysLeft()).isEqualTo(1);
+        assertThat(allowance.perDay()).isEqualByComparingTo("800.00");
+    }
+
+    @Test
+    void exactlyAtTheLimitIsZeroAndNotNegative() {
+        MonthlySummary summary = summaryOf(budgetRow(Category.FOOD, "3000", "3000"));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(summary, LocalDate.of(2026, 10, 8)).orElseThrow();
+
+        assertThat(allowance.perDay()).isEqualByComparingTo("0");
+        assertThat(allowance.isNegative()).isFalse();
+    }
+
+    @Test
+    void roundsDownSoPositiveNeverOverstatesAndNegativeShowsTheFullOverspend() {
+        LocalDate threeDaysLeft = LocalDate.of(2026, 10, 29);
+
+        assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "2900", "3000")), threeDaysLeft)
+                .orElseThrow().perDay()).isEqualByComparingTo("33.33");
+        assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "3100", "3000")), threeDaysLeft)
+                .orElseThrow().perDay()).isEqualByComparingTo("-33.34");
+    }
+
+    @Test
+    void spendingWithoutABudgetDoesNotReduceTheAllowance() {
+        MonthlySummary summary = summaryOf(budgetRow(Category.FOOD, "0", "3100"),
+                new CategorySummary(Category.RENT, new BigDecimal("4500"), null, null, false, BigDecimal.ZERO));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(summary, LocalDate.of(2026, 10, 1)).orElseThrow();
+
+        assertThat(allowance.daysLeft()).isEqualTo(31);
+        assertThat(allowance.perDay()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void aFutureMonthUsesAllItsDays() {
+        MonthlySummary november = new MonthlySummary(YearMonth.of(2026, 11), BigDecimal.ZERO,
+                List.of(budgetRow(Category.FOOD, "0", "3000")));
+
+        DailyAllowance allowance = summaryService.dailyAllowance(november, LocalDate.of(2026, 10, 8)).orElseThrow();
+
+        assertThat(allowance.daysLeft()).isEqualTo(30);
+        assertThat(allowance.perDay()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void noAllowanceWithoutBudgetsOrForAMonthThatIsOver() {
+        assertThat(summaryService.dailyAllowance(summaryOf(), LocalDate.of(2026, 10, 8))).isEmpty();
+        assertThat(summaryService.dailyAllowance(summaryOf(budgetRow(Category.FOOD, "10", "3000")),
+                LocalDate.of(2026, 11, 1))).isEmpty();
+    }
+
+    private static MonthlySummary summaryOf(CategorySummary... rows) {
+        BigDecimal total = java.util.Arrays.stream(rows).map(CategorySummary::spent)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new MonthlySummary(OCTOBER, total, List.of(rows));
+    }
+
+    private static CategorySummary budgetRow(Category category, String spent, String limit) {
+        BigDecimal spentAmount = new BigDecimal(spent);
+        BigDecimal limitAmount = new BigDecimal(limit);
+        return new CategorySummary(category, spentAmount, limitAmount, limitAmount.subtract(spentAmount),
+                spentAmount.compareTo(limitAmount) > 0, BigDecimal.ZERO);
     }
 
     private void givenTotals(CategoryTotal... totals) {

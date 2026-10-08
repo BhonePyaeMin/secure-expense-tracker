@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 @Controller
@@ -74,6 +75,7 @@ public class SummaryController {
         MonthlySummary summary = summaryService.summarize(userId, selected);
         model.addAttribute("summary", summary);
         model.addAttribute("balance", summaryService.balance(userId, summary));
+        model.addAttribute("allowance", summaryService.dailyAllowance(summary, LocalDate.now()).orElse(null));
         model.addAttribute("daily", summaryService.dailySpending(userId, selected));
         model.addAttribute("budgets", budgetService.findAll(userId));
     }

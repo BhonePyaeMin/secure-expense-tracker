@@ -2,6 +2,7 @@ package com.example.expenses.service;
 
 import com.example.expenses.dto.CategorySummary;
 import com.example.expenses.dto.CategoryTotal;
+import com.example.expenses.dto.DailyAllowance;
 import com.example.expenses.dto.DailySpending;
 import com.example.expenses.dto.DailyTotal;
 import com.example.expenses.dto.MonthlyBalance;
@@ -23,6 +24,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 @Service
@@ -72,6 +74,28 @@ public class SummaryService {
                 .toList();
 
         return new MonthlySummary(month, totalSpent, rows);
+    }
+
+    /**
+     * What's left of all category budgets, divided by the days left in the month (today included).
+     * Rounded down, so a positive allowance never overstates and a negative one shows the full overspend.
+     * Spending in categories without a budget doesn't count. Empty when no budgets are set or the month is over.
+     */
+    public Optional<DailyAllowance> dailyAllowance(MonthlySummary summary, LocalDate today) {
+        List<CategorySummary> budgeted = summary.categories().stream().filter(CategorySummary::hasBudget).toList();
+        YearMonth month = summary.month();
+        YearMonth current = YearMonth.from(today);
+        if (budgeted.isEmpty() || month.isBefore(current)) {
+            return Optional.empty();
+        }
+        int daysLeft = month.equals(current)
+                ? month.lengthOfMonth() - today.getDayOfMonth() + 1
+                : month.lengthOfMonth();
+        BigDecimal remaining = budgeted.stream()
+                .map(CategorySummary::remaining)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal perDay = remaining.divide(BigDecimal.valueOf(daysLeft), 2, RoundingMode.FLOOR);
+        return Optional.of(new DailyAllowance(remaining, daysLeft, perDay));
     }
 
     /** Income minus spending for the summary's month. */
